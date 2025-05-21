@@ -17,13 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('phone')->nullable();
-            $table->enum('user_type', ['client', 'entreprise', 'admin'])->default('client'); // client	
-            // $table->string('address')->nullable(); // client
-            // $table->boolean('is_wholesaler')->default(false); // client
-            // $table->string('siret')->nullable(); // entreprise
-            // $table->string('activity_sector')->nullable(); // entreprise
-            // $table->string('documents_path')->nullable(); // entreprise
-
+            $table->enum('user_type', ['client', 'entreprise', 'admin']); 
+            	
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

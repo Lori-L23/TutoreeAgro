@@ -1,24 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiMail, FiLock, FiUserPlus, FiArrowRight } from "react-icons/fi";
 import { FaGoogle } from "react-icons/fa";
-
-import { Link } from "react-router-dom";
+import { useAuth } from "../Contexts/Authcontexts";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const navigate = useNavigate();
+  const { login, user, profileType, isAuthenticated } = useAuth();
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (isAuthenticated && profileType) {
+      switch (profileType) {
+        case "admin":
+          navigate("/");
+          break;
+        case "client":
+          navigate("/", { state: { isLoggedIn: true } });
+          break;
+        case "entreprise":
+          navigate("/", { state: { isLoggedIn: true } });
+          break;
+        default:
+          break;
+      }
+    }
+  }, [isAuthenticated, profileType]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Traitement de la connexion
-    console.log({ email, password, rememberMe });
+    setLoading(true);
+    setError("");
+    setFieldErrors({});
+
+    const errors = {};
+    if (!email.trim()) errors.email = "Email requis";
+    if (!password) errors.password = "Mot de passe requis";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { success, message } = await login(email, password);
+      if (!success) {
+        setError(message || "Échec de la connexion");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Une erreur est survenue lors de la connexion");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-600 to-green-500 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden">
-        {/* En-tête avec image */}
         <div className="bg-green-600 p-6 text-center">
           <h1 className="text-3xl font-bold text-white">
             Bienvenue sur <span className="text-yellow-300">CamProduct</span>
@@ -29,8 +74,23 @@ const Login = () => {
         </div>
 
         <div className="p-8">
+          {/* Message de chargement */}
+          {loading && (
+            <div className="flex justify-center items-center mb-4">
+              <span className="text-green-600 font-medium animate-pulse">
+                Connexion en cours...
+              </span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 text-red-600 text-sm font-semibold">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Champ Email */}
+            {/* Email */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Adresse Email
@@ -48,9 +108,12 @@ const Login = () => {
                   required
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-sm text-red-500 mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
-            {/* Champ Mot de passe */}
+            {/* Mot de passe */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Mot de passe
@@ -68,6 +131,11 @@ const Login = () => {
                   required
                 />
               </div>
+              {fieldErrors.password && (
+                <p className="text-sm text-red-500 mt-1">
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             {/* Options */}
@@ -100,10 +168,39 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center items-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md"
+                className="w-full flex justify-center items-center bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md disabled:opacity-50"
+                disabled={loading}
               >
-                Se connecter
-                <FiArrowRight className="ml-2" />
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5 mr-2 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                    Connexion...
+                  </>
+                ) : (
+                  <>
+                    Se connecter
+                    <FiArrowRight className="ml-2" />
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -131,7 +228,7 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Options de connexion supplémentaires */}
+          {/* Connexion sociale */}
           <div className="mt-6 grid grid-cols-2 gap-4">
             <button
               type="button"

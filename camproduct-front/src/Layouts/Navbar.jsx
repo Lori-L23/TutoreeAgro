@@ -1,102 +1,288 @@
-import React from "react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  FaBars,
+  FaTimes,
+  FaSignInAlt,
+  FaUserPlus,
+  FaUser,
+  FaSignOutAlt,
+  FaHome,
+  FaStore,
+  FaBuilding,
+  FaEnvelope,
+  FaInfoCircle
+} from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../Contexts/Authcontexts";
 
-function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+const Navbar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, profileType, logout, isAuthenticated } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Utilisation de useCallback pour améliorer les performances
+  const handleScroll = useCallback(() => {
+    setIsScrolled(window.scrollY > 10);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  // Ferme le menu mobile lorsque l'URL change
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
+  
+  const handleLogout = () => {
+    try {
+      logout();
+      navigate("/login");
+      closeMenu();
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+    }
+  };
+
+  // Définition des icônes pour chaque lien
+  const icons = {
+    "/": <FaHome className="mr-2" />,
+    "/produits": <FaStore className="mr-2" />,
+    "/entreprises": <FaBuilding className="mr-2" />,
+    "/contact": <FaEnvelope className="mr-2" />,
+    "/apropos": <FaInfoCircle className="mr-2" />
+  };
+
+  const firstLetter = profileType ? profileType.charAt(0).toLowerCase() : "";
+
+  const dynamicRoutes = {
+    c: [
+      { to: "/mes-commandes", text: "Mes commandes" }
+    ],
+    e: [
+      { to: "/dashboard", text: "Tableau de bord"},
+      { to: "/mes-produits", text: "Mes produits"}
+    ],
+    a: [
+      { to: "/admin", text: "Administration" },
+      { to: "/utilisateurs", text: "Utilisateurs" }
+    ]
+  };
+
+  const commonLinks = [
+    { to: "/", text: "Accueil", icon: icons["/"] },
+    { to: "/produits", text: "Produits", icon: icons["/produits"] },
+    { to: "/entreprises", text: "Entreprises", icon: icons["/entreprises"] }
+  ];
+
+  const getRoleSpecificLinks = () => {
+    if (!isAuthenticated || !firstLetter) return [];
+    return dynamicRoutes[firstLetter] || [];
+  };
+
+  // Construire la liste de liens complète
+  const allLinks = [
+    ...commonLinks,
+    ...getRoleSpecificLinks(),
+    { to: "/contact", text: "Contact", icon: icons["/contact"] },
+    { to: "/apropos", text: "À propos", icon: icons["/apropos"] }
+  ];
+
+  // Déterminer la page de profil selon le type d'utilisateur
+  const getProfilePath = () => {
+    if (!profileType) return "/mon-compte";
+    
+    switch (profileType.toLowerCase()) {
+      case "client": return "/mon-compte";
+      case "entreprise": return "/dashboard";
+      case "admin": return "/admin";
+      default: return "/mon-compte";
+    }
+  };
+
+  // Animation pour le menu mobile
+  const menuVariants = {
+    hidden: { x: "100%" },
+    visible: { 
+      x: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30 
+      }
+    },
+    exit: { 
+      x: "100%",
+      transition: { 
+        ease: "easeInOut", 
+        duration: 0.3 
+      }
+    }
+  };
 
   return (
-    <header className="bg-[#4CAF50] text-white shadow-md fixed w-full z-10">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold">
-          CamProduct
-        </Link>
+    <nav
+      className={`fixed w-full z-50 transition-all duration-300 bg-green-600 text-white shadow-md ${
+        isScrolled ? "py-2" : "py-4"
+      }`}
+    >
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center">
+          {/* Logo */}
+          <Link to="/" className="z-40" onClick={closeMenu}>
+            <h1 className="text-2xl font-bold">CamProduct</h1>
+          </Link>
 
-        {/* Menu Desktop */}
-        <nav className="hidden md:flex space-x-6">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>
-          <Link to="/products" className="hover:underline">
-            Produits
-          </Link>
-          <Link to="/entreprises" className="hover:underline">
-            Entreprises
-          </Link>
-          <Link to="/contact" className="hover:underline">
-            Contact
-          </Link>
-          <Link to="/about" className="hover:underline">
-            À propos
-          </Link>
-          <div className=" items-center space-x-4">
-            <Link
-              to="/login"
-              className="text-white font-medium hover:underline transition duration-200"
-            >
-              Connexion
-            </Link>
-
-            <Link
-              to="/register"
-              className="bg-white text-[#4CAF50] border border-[#4CAF50] px-4 py-2 rounded-lg font-semibold hover:bg-[#4CAF50] hover:text-white transition duration-200"
-            >
-              Inscription
-            </Link>
-          </div>
-        </nav>
-
-        {/* Bouton Mobile */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? (
-            <XMarkIcon className="h-6 w-6" />
-          ) : (
-            <Bars3Icon className="h-6 w-6" />
-          )}
-        </button>
-      </div>
-
-      {/* Menu Mobile */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-cameroon-green px-4 pb-4">
-          <nav className="flex flex-col space-y-3">
-            <Link to="/" className="hover:underline py-1">
-              Accueil
-            </Link>
-            <Link to="/products" className="hover:underline py-1">
-              Produits
-            </Link>
-            <Link to="/entreprises" className="hover:underline py-1">
-              Entreprises
-            </Link>
-            <Link to="/contact" className="hover:underline py-1">
-              Contact
-            </Link>
-            <Link to="/about" className="hover:underline py-1">
-              À propos
-            </Link>
-            <Link
-              to="/login"
-              className="text-white font-medium hover:underline transition duration-200 py-1"
-            >
-                Connexion
-               </Link>
-            <Link
-              to="/register"
-              className="bg-white text-[#4CAF50] border border-[#4CAF50] px-4  rounded-lg font-semibold hover:bg-[#4CAF50] hover:text-white transition duration-200 py-1"
-            >
-              Inscription
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
+            {allLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`hover:underline text-white font-medium transition-colors duration-200 flex items-center ${
+                  location.pathname === link.to ? "text-yellow-300" : ""
+                }`}
+              >
+                {link.icon}
+                {link.text}
               </Link>
-          </nav>
-        </div>
-      )}
-    </header>
-  );
-}
+            ))}
 
+            <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-white/30">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to={getProfilePath()}
+                    className="flex items-center text-white font-medium hover:text-yellow-300 transition-colors duration-200"
+                  >
+                    <FaUser className="mr-2" />
+                    {user?.name || "Mon compte"}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 hover:text-white transition duration-200"
+                    aria-label="Déconnexion"
+                  >
+                    <FaSignOutAlt className="mr-2" /> Déconnexion
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="flex items-center text-white font-medium hover:text-yellow-300 transition-colors duration-200"
+                    aria-label="Connexion"
+                  >
+                    <FaSignInAlt className="mr-2" /> Connexion
+                  </button>
+                  <button
+                    onClick={() => navigate("/register")}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition duration-200"
+                    aria-label="Inscription"
+                  >
+                    <FaUserPlus className="inline mr-2" /> Inscription
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Button */}
+          <div className="md:hidden flex items-center">
+            <button 
+              onClick={toggleMenu} 
+              className="text-white p-2 focus:outline-none"
+              aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            >
+              {isOpen ? (
+                <FaTimes className="h-6 w-6" />
+              ) : (
+                <FaBars className="h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={menuVariants}
+              className="fixed inset-0 bg-green-600 z-30 pt-20 px-6 overflow-y-auto md:hidden text-white"
+            >
+              <div className="flex flex-col space-y-2">
+                {allLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={closeMenu}
+                    className={`text-lg font-medium py-3 border-b border-white/30 flex items-center ${
+                      location.pathname === link.to ? "text-yellow-300" : ""
+                    }`}
+                  >
+                    {link.icon}
+                    {link.text}
+                  </Link>
+                ))}
+
+                <div className="pt-4">
+                  {isAuthenticated ? (
+                    <>
+                      <Link
+                        to={getProfilePath()}
+                        onClick={closeMenu}
+                        className="flex items-center text-lg font-medium py-3 border-b border-white/30"
+                      >
+                        <FaUser className="mr-2" />
+                        {user?.name || "Mon compte"}
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full justify-center text-lg font-medium py-3 mt-4 bg-white text-green-600 rounded-lg hover:bg-red-500 hover:text-white transition duration-200"
+                      >
+                        <FaSignOutAlt className="mr-2" /> Déconnexion
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col space-y-3 pt-2">
+                      <button
+                        onClick={() => {
+                          navigate("/login");
+                          closeMenu();
+                        }}
+                        className="flex items-center justify-center text-lg font-medium py-3 bg-white/20 rounded-lg hover:bg-white/30 transition duration-200"
+                      >
+                        <FaSignInAlt className="mr-2" /> Connexion
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/register");
+                          closeMenu();
+                        }}
+                        className="flex items-center justify-center bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition duration-200"
+                      >
+                        <FaUserPlus className="mr-2" /> Inscription
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </nav>
+  );
+};
 
 export default Navbar;

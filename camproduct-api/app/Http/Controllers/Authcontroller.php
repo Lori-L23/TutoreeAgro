@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Admin;
 use App\Models\Clients;
 use App\Models\Entreprises;
 
@@ -19,7 +20,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'phone' => 'nullable|string|max:20',
-            'user_type' => 'required|in:client,entreprise',
+            'user_type' => 'required|in:client,entreprise,admin',
 
             // Champs spécifiques client
             'nom_complet' => 'required_if:user_type,client|string|max:255',
@@ -29,8 +30,16 @@ class AuthController extends Controller
             // Champs spécifiques entreprise
             'nom_entreprise' => 'required_if:user_type,entreprise|string|max:255',
             'siret' => 'nullable|string|max:255|unique:entreprises,siret',
+            'logo'=> 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'region' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:255',
+            'status' => 'nullable|in:en_attente,approuve,rejete',
+            'date_verification' => 'nullable|date',
             'activity_sector' => 'nullable|string|max:255',
             'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+
+            // Champs spécifiques admin
+            'noms' => 'required_if:user_type,admin|string|max:255',
         ]);
 
         if ($validated->fails()) {
@@ -66,13 +75,25 @@ class AuthController extends Controller
                 'user_id' => $user->id,
                 'nom_entreprise' => $data['nom_entreprise'],
                 'siret' => $data['siret'] ?? null,
+                'logo' => $data['logo'] ?? null,
+                'region' => $data['region'] ?? null,
+                'ville' => $data['ville'] ?? null,
+                'status' => $data['status'] ?? 'en_attente',
+                'date_verification' => $data['date_verification'] ?? null,
                 'activity_sector' => $data['activity_sector'] ?? null,
                 'documents_path' => $data['documents_path'] ?? null,
             ]);
         }
 
+        if ($data['user_type'] === 'admin') {
+            Admin::create([
+                'user_id' => $user->id,
+                'noms' => $data['noms'] ?? null,
+            ]);
+        }
+
         // Chargement éventuel des relations si elles existent
-        $user->load(['client', 'entreprise']);
+        $user->load(['client', 'entreprise', 'admin']);
 
         return response()->json([
             'message' => 'Inscription réussie.',
@@ -119,7 +140,7 @@ class AuthController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    } 
+    }
     public function logout(Request $request)
     {
         try {
@@ -131,5 +152,53 @@ class AuthController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function getUserWithProfile(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $profile = null;
+        $profileType = null;
+
+        switch ($user->user_type) {
+            case 'client':
+                $profile = Clients::where('user_id', $user->id)->first();
+                $profileType = 'client';
+                break;
+            case 'entreprise':
+                $profile = Entreprises::where('user_id', $user->id)->first();
+                $profileType = 'entreprise';
+                break;
+            case 'admin':
+                $profile = Admin::where('user_id', $user->id)->first();
+                $profileType = 'admin';
+                break;
+            default:
+                return response()->json([
+                    'message' => 'Rôle utilisateur invalide'
+                ], 400);
+        }
+
+        // Vérification que le profil existe pour le rôle
+        if (!$profile) {
+            return response()->json([
+                'message' => 'Profil utilisateur introuvable pour ce rôle',
+                'user' => $user,
+                'profile_type' => $profileType
+            ], 404);
+        }
+
+        return response()->json([
+            'user' => $user,
+            'profile' => $profile,
+            'profile_type' => $profileType
+        ]);
     }
 }

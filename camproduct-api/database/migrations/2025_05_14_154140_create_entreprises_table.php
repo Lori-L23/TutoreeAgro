@@ -16,8 +16,14 @@ return new class extends Migration
             $table->foreignId(column: 'user_id')->constrained('users')->onDelete('cascade');
             $table->string('nom_entreprise')->nullable();
             $table->string('siret')->nullable();
+            $table->string('logo')->nullable();
             $table->string('activity_sector')->nullable();
             $table->string('documents_path')->nullable();
+            $table->enum('status', ['en_attente', 'approuve', 'rejete'])->default('en_attente');
+            // $table->date('date_verification')->nullable();
+            $table->string('region');
+            $table->string('ville');
+            // $table->text('description')->nullable();
             $table->timestamps();
         });
     }

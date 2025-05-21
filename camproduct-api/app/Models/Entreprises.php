@@ -10,12 +10,28 @@ class Entreprises extends Model
         'user_id',
         'nom_entreprise',
         'siret',
+        'logo',
+        'ville',
+        'region',
+        // 'date_verification',
+        'status',
         'activity_sector',
         'documents_path',
     ];
 
+    
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    
+    public function produits(){
+
+        return $this->hasMany(Produit::class);
+    }
+
+      public function isApproved()
+    {
+        return $this->status === 'approuve';
     }
 }
