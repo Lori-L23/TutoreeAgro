@@ -11,7 +11,7 @@ import {
   FaStore,
   FaBuilding,
   FaEnvelope,
-  FaInfoCircle
+  FaInfoCircle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../Contexts/Authcontexts";
@@ -33,6 +33,7 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
+  console.log("user", user);
   // Ferme le menu mobile lorsque l'URL change
   useEffect(() => {
     setIsOpen(false);
@@ -40,7 +41,7 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
-  
+
   const handleLogout = () => {
     try {
       logout();
@@ -57,29 +58,27 @@ const Navbar = () => {
     "/produits": <FaStore className="mr-2" />,
     "/entreprises": <FaBuilding className="mr-2" />,
     "/contact": <FaEnvelope className="mr-2" />,
-    "/apropos": <FaInfoCircle className="mr-2" />
+    "/apropos": <FaInfoCircle className="mr-2" />,
   };
 
   const firstLetter = profileType ? profileType.charAt(0).toLowerCase() : "";
 
   const dynamicRoutes = {
-    c: [
-      { to: "/mes-commandes", text: "Mes commandes" }
-    ],
+    c: [{ to: "/commandes", text: "Mes commandes" }],
     e: [
-      { to: "/dashboard", text: "Tableau de bord"},
-      { to: "/mes-produits", text: "Mes produits"}
+      { to: "/dashboard", text: "Tableau de bord" },
+      { to: "/mesproduits", text: "Mes produits" },
     ],
     a: [
-      { to: "/admin", text: "Administration" },
-      { to: "/utilisateurs", text: "Utilisateurs" }
-    ]
+      { to: "/dashboardadmin", text: "Administration" },
+      { to: "/adminusers", text: "Utilisateurs" },
+    ],
   };
 
   const commonLinks = [
     { to: "/", text: "Accueil", icon: icons["/"] },
     { to: "/produits", text: "Produits", icon: icons["/produits"] },
-    { to: "/entreprises", text: "Entreprises", icon: icons["/entreprises"] }
+    { to: "/entreprises", text: "Entreprises", icon: icons["/entreprises"] },
   ];
 
   const getRoleSpecificLinks = () => {
@@ -92,39 +91,43 @@ const Navbar = () => {
     ...commonLinks,
     ...getRoleSpecificLinks(),
     { to: "/contact", text: "Contact", icon: icons["/contact"] },
-    { to: "/apropos", text: "À propos", icon: icons["/apropos"] }
+    { to: "/apropos", text: "À propos", icon: icons["/apropos"] },
   ];
 
   // Déterminer la page de profil selon le type d'utilisateur
   const getProfilePath = () => {
-    if (!profileType) return "/mon-compte";
-    
+    if (!profileType) return "/moncompte";
+
     switch (profileType.toLowerCase()) {
-      case "client": return "/mon-compte";
-      case "entreprise": return "/dashboard";
-      case "admin": return "/admin";
-      default: return "/mon-compte";
+      case "client":
+        return "/moncompte";
+      case "entreprise":
+        return "/compteentreprise";
+      case "admin":
+        return "/admincompte";
+      default:
+        return "/moncompte";
     }
   };
 
   // Animation pour le menu mobile
   const menuVariants = {
     hidden: { x: "100%" },
-    visible: { 
+    visible: {
       x: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30 
-      }
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      },
     },
-    exit: { 
+    exit: {
       x: "100%",
-      transition: { 
-        ease: "easeInOut", 
-        duration: 0.3 
-      }
-    }
+      transition: {
+        ease: "easeInOut",
+        duration: 0.3,
+      },
+    },
   };
 
   return (
@@ -137,7 +140,9 @@ const Navbar = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="z-40" onClick={closeMenu}>
-            <h1 className="text-2xl font-bold">CamProduct</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 text-transparent bg-clip-text">
+              CamProduct
+            </h1>
           </Link>
 
           {/* Desktop Links */}
@@ -163,7 +168,7 @@ const Navbar = () => {
                     className="flex items-center text-white font-medium hover:text-yellow-300 transition-colors duration-200"
                   >
                     <FaUser className="mr-2" />
-                    {user?.name || "Mon compte"}
+                    {user?.profile?.nom_entreprise || "Mon compte"}
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -196,8 +201,8 @@ const Navbar = () => {
 
           {/* Mobile Button */}
           <div className="md:hidden flex items-center">
-            <button 
-              onClick={toggleMenu} 
+            <button
+              onClick={toggleMenu}
               className="text-white p-2 focus:outline-none"
               aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
             >
@@ -244,7 +249,7 @@ const Navbar = () => {
                         className="flex items-center text-lg font-medium py-3 border-b border-white/30"
                       >
                         <FaUser className="mr-2" />
-                        {user?.name || "Mon compte"}
+                        {user?.email?.nom_entreprise || "Mon compte"}
                       </Link>
                       <button
                         onClick={handleLogout}

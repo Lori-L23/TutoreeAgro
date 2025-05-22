@@ -5,15 +5,20 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Accueil from "./Pages/Accueil";
 import Login from "./Auth/Login";
 import Register from "./Auth/Register";
-import Produits from "./Pages/Produits";
 import Entreprises from "./Pages/Entreprises";
 import Contact from "./Pages/Contact";
 import APropos from "./Pages/Apropos";
-
+import ForgotPassword from "./components/ForgotPassword";
+import Commandes from "./client/commandes";
+import MonCompte from "./client/compteclient";
+import Produits from "./Pages/Produits";
+import Mesproduits from "./entreprise/Produits";
+import CompteEntreprise from "./entreprise/Compte";
 import Dashboardclient from "./client/dashboard";
-import Dashboard from "./admin/dashboard";
-
+import AdminDashboard from "./admin/dashboard";
 import Dashboardentre from "./entreprise/dashboard";
+import AdminAccount from "./admin/Compte";
+import AdminUsers from "./admin/AdminUsers";
 
 import { AuthProvider } from "./Contexts/Authcontexts";
 
@@ -29,10 +34,22 @@ function App() {
               <Route path="/entreprises" element={<Entreprises />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/apropos" element={<APropos />} />
-            </Route>
-            <Route path="/admin " element={<Dashboard />} />
+              <Route path="/commandes" element={<Commandes />} />
+              <Route path="/moncompte" element={<MonCompte />} />
+              <Route path="/dashboardclient" element={<Dashboardclient />} />
+              <Route path="/dashboard" element={<Dashboardentre />} />
+              <Route path="/mesproduits" element={<Mesproduits />} />
+              <Route path="/compteentreprise" element={<CompteEntreprise />} />
+              <Route path="/dashboardadmin" element={<AdminDashboard />} />
+              <Route path="/admincompte" element={<AdminAccount />} />
+              <Route path="/adminusers" element={<AdminUsers />} />
+              {/* <Route path="/dashboardadmin" element={<Dashboardentre />} /> */}
+
+            </Route>  
+            {/* <Route path="/admin " element={<Dashboard />} /> */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

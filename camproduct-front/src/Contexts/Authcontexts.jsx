@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import Api from "../Services/Api";
 
 const AuthContext = createContext();
@@ -36,11 +42,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) {
-        setAuthState(prev => ({ ...prev, loading: false }));
+        setAuthState((prev) => ({ ...prev, loading: false }));
         return;
       }
 
-    //   Api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      //   Api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       const response = await Api.get("/api/user-with-profile");
 
       if (response.data.message) {
@@ -64,94 +70,162 @@ export const AuthProvider = ({ children }) => {
         loading: false,
         error: null,
       });
-
     } catch (error) {
       console.error("Erreur de chargement utilisateur:", error);
-      if (error.response?.status === 401 || error.message.includes("Non autorisé")) {
+      if (
+        error.response?.status === 401 ||
+        error.message.includes("Non autorisé")
+      ) {
         logout(); // Maintenant logout est accessible
       } else {
-        setAuthState(prev => ({
+        setAuthState((prev) => ({
           ...prev,
           loading: false,
-          error: error.message
+          error: error.message,
         }));
       }
     }
   }, [logout]); // Ajoutez logout comme dépendance
 
   // Puis déclarez login qui utilise loadUserData
-  const login = useCallback(async (email, password) => {
-    try {
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
-      await Api.get("/sanctum/csrf-cookie");
-      
-      const response = await Api.post("/api/login", { email, password });
+  const login = useCallback(
+    async (email, password) => {
+      try {
+        setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+        await Api.get("/sanctum/csrf-cookie");
 
-      if (!response.data?.token) {
-        throw new Error("Token non reçu dans la réponse");
+        const response = await Api.post("/api/login", { email, password });
+
+        if (!response.data?.token) {
+          throw new Error("Token non reçu dans la réponse");
+        }
+
+        localStorage.setItem("auth_token", response.data.token);
+        Api.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${response.data.token}`;
+
+        await loadUserData();
+
+        return { success: true };
+      } catch (error) {
+        console.error("Erreur de connexion:", error);
+        let errorMessage = "Erreur de connexion";
+        if (error.response) {
+          errorMessage =
+            error.response.data?.message ||
+            error.response.data?.error ||
+            "Identifiants incorrects";
+        }
+
+        setAuthState((prev) => ({
+          ...prev,
+          loading: false,
+          error: errorMessage,
+        }));
+
+        return {
+          success: false,
+          message: errorMessage,
+          errors: error.response?.data?.errors,
+        };
       }
-
-      localStorage.setItem("auth_token", response.data.token);
-      Api.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
-
-      await loadUserData();
-
-      return { success: true };
-    } catch (error) {
-      console.error("Erreur de connexion:", error);
-      let errorMessage = "Erreur de connexion";
-      if (error.response) {
-        errorMessage = error.response.data?.message || 
-                      error.response.data?.error || 
-                      "Identifiants incorrects";
-      }
-
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
-
-      return { 
-        success: false, 
-        message: errorMessage,
-        errors: error.response?.data?.errors 
-      };
-    }
-  }, [loadUserData]);
+    },
+    [loadUserData]
+  );
 
   // Enfin register
-  const register = useCallback(async (userData) => {
-    try {
-      setAuthState(prev => ({ ...prev, loading: true, error: null }));
-      await Api.get("/sanctum/csrf-cookie");
-      const response = await Api.post("/api/register", userData);
+  // const register = useCallback(
+  //   async (userData) => {
+  //     try {
+  //       setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+  //       await Api.get("/sanctum/csrf-cookie");
+  //       const response = await Api.post("/api/register", userData);
 
-      if (response.data?.token) {
-        localStorage.setItem("auth_token", response.data.token);
-        await loadUserData();
-        return { success: true };
+  //       if (response.data?.token) {
+  //         localStorage.setItem("auth_token", response.data.token);
+  //         await loadUserData();
+  //         return { success: true };
+  //       }
+
+  //       throw new Error("Réponse d'inscription incomplète");
+  //     } catch (error) {
+  //       console.error("Erreur d'inscription:", error);
+  //       const errorMessage =
+  //         error.response?.data?.message || "Erreur lors de l'inscription";
+
+  //       setAuthState((prev) => ({
+  //         ...prev,
+  //         loading: false,
+  //         error: errorMessage,
+  //       }));
+
+  //       return {
+  //         success: false,
+  //         message: errorMessage,
+  //         errors: error.response?.data?.errors,
+  //       };
+  //     }
+  //   },
+  //   [loadUserData]
+  // );
+  // Dans Authcontexts.jsx, modifiez la fonction register comme suit :
+
+  const register = useCallback(
+    async (userData) => {
+      try {
+        setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+        await Api.get("/sanctum/csrf-cookie");
+        const response = await Api.post("/api/register", userData);
+
+        // Debug: Loggez la réponse pour voir sa structure
+        console.log("Réponse d'inscription:", response.data);
+
+        // Vérifiez différentes structures possibles de réponse
+        if (response.data?.token) {
+          localStorage.setItem("auth_token", response.data.token);
+          Api.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${response.data.token}`;
+          await loadUserData();
+          return { success: true };
+        }
+        // Cas où l'inscription réussit mais sans token (confirmation email par exemple)
+        else if (
+          response.data?.success ||
+          response.status === 201 ||
+          response.status === 200
+        ) {
+          return {
+            success: true,
+            message: response.data?.message || "Inscription réussie",
+            requiresConfirmation: !response.data?.token, // Indique si une confirmation est nécessaire
+          };
+        }
+
+        // Si aucune condition n'est remplie, loggez la réponse pour diagnostic
+        console.error("Structure de réponse inattendue:", response.data);
+        throw new Error("Réponse d'inscription incomplète");
+      } catch (error) {
+        console.error("Erreur d'inscription:", error);
+        const errorMessage =
+          error.response?.data?.message || "Erreur lors de l'inscription";
+
+        setAuthState((prev) => ({
+          ...prev,
+          loading: false,
+          error: errorMessage,
+        }));
+
+        return {
+          success: false,
+          message: errorMessage,
+          errors: error.response?.data?.errors,
+        };
       }
-
-      throw new Error("Réponse d'inscription incomplète");
-    } catch (error) {
-      console.error("Erreur d'inscription:", error);
-      const errorMessage = error.response?.data?.message || 
-                         "Erreur lors de l'inscription";
-      
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
-
-      return { 
-        success: false, 
-        message: errorMessage,
-        errors: error.response?.data?.errors 
-      };
-    }
-  }, [loadUserData]);
+    },
+    [loadUserData]
+  );
 
   // Chargement initial
   useEffect(() => {

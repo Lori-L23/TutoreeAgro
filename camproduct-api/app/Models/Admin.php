@@ -8,7 +8,7 @@ class Admin extends Model
 {
     protected $fillable = [
         'user_id',
-        'nom_complet',
+        'noms',
      
     ];
     public function user()
