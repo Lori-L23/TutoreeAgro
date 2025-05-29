@@ -65,10 +65,10 @@ const Navbar = () => {
 
   const dynamicRoutes = {
     c: [{ to: "/commandes", text: "Mes commandes" }],
-    e: [
-      { to: "/dashboard", text: "Tableau de bord" },
-      { to: "/mesproduits", text: "Mes produits" },
-    ],
+    // e: [
+    //   { to: "/dashboard", text: "Tableau de bord" },
+    //   { to: "/mesproduits", text: "Mes produits" },
+    // ],
     a: [
       { to: "/dashboardadmin", text: "Administration" },
       { to: "/adminusers", text: "Utilisateurs" },
@@ -76,9 +76,9 @@ const Navbar = () => {
   };
 
   const commonLinks = [
-    { to: "/", text: "Accueil", icon: icons["/"] },
-    { to: "/produits", text: "Produits", icon: icons["/produits"] },
-    { to: "/entreprises", text: "Entreprises", icon: icons["/entreprises"] },
+    { to: "/", text: "Accueil" },
+    { to: "/produits", text: "Produits" },
+    { to: "/entreprises", text: "Entreprises" },
   ];
 
   const getRoleSpecificLinks = () => {
@@ -90,8 +90,8 @@ const Navbar = () => {
   const allLinks = [
     ...commonLinks,
     ...getRoleSpecificLinks(),
-    { to: "/contact", text: "Contact", icon: icons["/contact"] },
-    { to: "/apropos", text: "À propos", icon: icons["/apropos"] },
+    { to: "/contact", text: "Contact" },
+    { to: "/apropos", text: "À propos"},
   ];
 
   // Déterminer la page de profil selon le type d'utilisateur

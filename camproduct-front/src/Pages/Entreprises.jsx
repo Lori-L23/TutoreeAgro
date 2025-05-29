@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Filter, MapPin, Phone, Mail, BarChart2, List, Grid, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowDownUp } from 'lucide-react';
-import fruits from '../assets/3.avif';
-import epices from '../assets/epices.png';
 import api from '../assets/api.png';
-import cacao from '../assets/cacao1.jpg';
 import saveur from '../assets/saveur.avif';
-import cereales from '../assets/cereales.jpg';
+
+// Images placeholder - remplacez par vos vraies URLs d'images
+const fruits = 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop';
+const epices = 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop';
+const cacao = 'https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&h=300&fit=crop';
+const cereales = 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop';
 
 // Composant réutilisable pour les cartes d'entreprise
 const EnterpriseCard = ({ enterprise, viewMode }) => {
@@ -140,12 +142,14 @@ const FilterSection = ({ title, icon, children }) => (
 );
 
 export default function Entreprises() {
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [activeFilters, setActiveFilters] = useState([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('alphabetic');
   
-  // Données factices pour la démo
-  const enterprises = [
+  // Données des entreprises
+  const allEnterprises = [
     { 
       id: 1, 
       name: "Fruits du Pays", 
@@ -273,12 +277,79 @@ export default function Entreprises() {
     { name: "Sans conservateurs", count: 35 },
   ];
 
+  // Fonction de recherche et filtrage
+  const filteredEnterprises = useMemo(() => {
+    let filtered = allEnterprises;
+
+    // Recherche textuelle
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(enterprise => 
+        enterprise.name.toLowerCase().includes(searchLower) ||
+        enterprise.description.toLowerCase().includes(searchLower) ||
+        enterprise.category.toLowerCase().includes(searchLower) ||
+        enterprise.city.toLowerCase().includes(searchLower) ||
+        enterprise.region.toLowerCase().includes(searchLower) ||
+        enterprise.certifications.some(cert => cert.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Filtres par région, catégorie et certification
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter(enterprise => {
+        return activeFilters.every(filter => {
+          if (filter.startsWith('region-')) {
+            return enterprise.region === filter.replace('region-', '');
+          }
+          if (filter.startsWith('cat-')) {
+            return enterprise.category.includes(filter.replace('cat-', ''));
+          }
+          if (filter.startsWith('cert-')) {
+            return enterprise.certifications.includes(filter.replace('cert-', ''));
+          }
+          return true;
+        });
+      });
+    }
+
+    // Tri
+    switch (sortBy) {
+      case 'alphabetic':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'products':
+        filtered.sort((a, b) => b.products - a.products);
+        break;
+      case 'date':
+        // Tri par featured d'abord, puis par id
+        filtered.sort((a, b) => {
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          return b.id - a.id;
+        });
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [searchTerm, activeFilters, sortBy]);
+
   const toggleFilter = (filter) => {
     if (activeFilters.includes(filter)) {
       setActiveFilters(activeFilters.filter(f => f !== filter));
     } else {
       setActiveFilters([...activeFilters, filter]);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    // La recherche se fait automatiquement via useMemo
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
   };
 
   return (
@@ -308,26 +379,43 @@ export default function Entreprises() {
           </motion.p>
           
           {/* Barre de recherche */}
-          <motion.div
+          <motion.form
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
+            onSubmit={handleSearch}
             className="relative max-w-xl mt-6"
           >
             <input 
               type="text" 
-              placeholder="Rechercher une entreprise..." 
-              className="w-full p-4 rounded-xl pl-12 text-gray-800 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm" 
+              placeholder="Rechercher une entreprise, catégorie, ville..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-4 rounded-xl pl-12 pr-24 text-gray-800 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm" 
             />
             <Search className="absolute left-4 top-4 text-gray-500" size={20} />
+            
+            {searchTerm && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-16 top-4 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </motion.button>
+            )}
+            
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              type="submit"
               className="absolute right-2 top-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium"
             >
               Rechercher
             </motion.button>
-          </motion.div>
+          </motion.form>
         </div>
       </motion.div>
 
@@ -339,7 +427,7 @@ export default function Entreprises() {
           className="flex items-center bg-white px-4 py-2 rounded-lg shadow text-sm font-medium"
         >
           <Filter className="h-4 w-4 mr-2" />
-          Filtres
+          Filtres {activeFilters.length > 0 && `(${activeFilters.length})`}
         </motion.button>
       </div>
 
@@ -504,15 +592,26 @@ export default function Entreprises() {
               className="bg-white rounded-xl shadow p-4 mb-6"
             >
               <div className="flex flex-wrap justify-between items-center">
-                <p className="text-sm text-gray-600">{enterprises.length} entreprises trouvées</p>
+                <p className="text-sm text-gray-600">
+                  {filteredEnterprises.length} entreprise{filteredEnterprises.length !== 1 ? 's' : ''} trouvée{filteredEnterprises.length !== 1 ? 's' : ''}
+                  {searchTerm && (
+                    <span className="ml-1 text-green-600 font-medium">
+                      pour "{searchTerm}"
+                    </span>
+                  )}
+                </p>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center">
                     <span className="mr-2 text-sm text-gray-600">Trier par:</span>
                     <div className="relative">
-                      <select className="appearance-none p-2 pr-8 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        <option>Alphabétique</option>
-                        <option>Nombre de produits</option>
-                        <option>Date d'inscription</option>
+                      <select 
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="appearance-none p-2 pr-8 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="alphabetic">Alphabétique</option>
+                        <option value="products">Nombre de produits</option>
+                        <option value="date">Date d'inscription</option>
                       </select>
                       <ArrowDownUp className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
                     </div>
@@ -539,28 +638,30 @@ export default function Entreprises() {
               </div>
               
               {/* Filtres actifs */}
-              {activeFilters.length > 0 && (
+              {(activeFilters.length > 0 || searchTerm) && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {activeFilters.map((filter, index) => (
+                  {searchTerm && (
                     <motion.span 
-                      key={index}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full flex items-center"
+                      className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full flex items-center"
                     >
-                      {filter.replace('region-', '').replace('cat-', '').replace('cert-', '')}
+                      Recherche: "{searchTerm}"
                       <button 
-                        className="ml-1 hover:text-green-600"
-                        onClick={() => toggleFilter(filter)}
+                        className="ml-1 hover:text-blue-600"
+                        onClick={clearSearch}
                       >
                         <X className="h-3 w-3" />
                       </button>
                     </motion.span>
-                  ))}
+                  )}
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
                     className="text-xs text-blue-600 hover:underline ml-2" 
-                    onClick={() => setActiveFilters([])}
+                    onClick={() => {
+                      setActiveFilters([]);
+                      setSearchTerm('');
+                    }}
                   >
                     Effacer tous
                   </motion.button>
@@ -568,59 +669,95 @@ export default function Entreprises() {
               )}
             </motion.div>
             
-            {/* Affichage des entreprises */}
-            {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {enterprises.map((enterprise, index) => (
-                  <motion.div
-                    key={enterprise.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.05 }}
-                  >
-                    <EnterpriseCard enterprise={enterprise} viewMode={viewMode} />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {enterprises.map((enterprise, index) => (
-                  <motion.div
-                    key={enterprise.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.05 }}
-                  >
-                    <EnterpriseCard enterprise={enterprise} viewMode={viewMode} />
-                  </motion.div>
-                ))}
-              </div>
+            {/* Message si aucun résultat */}
+            {filteredEnterprises.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white rounded-xl shadow p-8 text-center"
+              >
+                <div className="text-gray-400 mb-4">
+                  <Search size={48} className="mx-auto" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Aucune entreprise trouvée
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Essayez de modifier vos critères de recherche ou vos filtres.
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setSearchTerm('');
+                    setActiveFilters([]);
+                  }}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  Réinitialiser la recherche
+                </motion.button>
+              </motion.div>
             )}
             
-            {/* Pagination */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="mt-8 flex justify-center"
-            >
-              <nav className="inline-flex rounded-md shadow">
-                <button className="py-2 px-3 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 flex items-center">
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button className="py-2 px-4 bg-green-700 text-white border border-green-700">1</button>
-                <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">2</button>
-                <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">3</button>
-                <button className="py-2 px-3 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 flex items-center">
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </nav>
-            </motion.div>
+            {/* Affichage des entreprises */}
+            {filteredEnterprises.length > 0 && (
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredEnterprises.map((enterprise, index) => (
+                      <motion.div
+                        key={enterprise.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                      >
+                        <EnterpriseCard enterprise={enterprise} viewMode={viewMode} />
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {filteredEnterprises.map((enterprise, index) => (
+                      <motion.div
+                        key={enterprise.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                      >
+                        <EnterpriseCard enterprise={enterprise} viewMode={viewMode} />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Pagination */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  className="mt-8 flex justify-center"
+                >
+                  <nav className="inline-flex rounded-md shadow">
+                    <button className="py-2 px-3 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 flex items-center">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button className="py-2 px-4 bg-green-700 text-white border border-green-700">1</button>
+                    <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">2</button>
+                    <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">3</button>
+                    <button className="py-2 px-3 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 flex items-center">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </nav>
+                </motion.div>
+              </>
+            )}
           </div>
         </div>
       </div>
     </div>
-  );
+    );
 }
+
+  

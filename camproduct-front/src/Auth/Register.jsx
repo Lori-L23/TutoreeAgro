@@ -4,14 +4,20 @@ import { useAuth } from "../Contexts/Authcontexts";
 import { toast } from "react-toastify";
 import {
   FiUpload,
-  FiChevronDown,
   FiUser,
   FiBriefcase,
   FiLock,
   FiCheck,
   FiMapPin,
   FiImage,
+  FiMail,
+  FiCheckCircle,
 } from "react-icons/fi";
+
+const USER_TYPES = {
+  CLIENT: "client",
+  ENTREPRISE: "entreprise",
+};
 
 const Register = () => {
   const navigate = useNavigate();
@@ -19,20 +25,23 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [user_type, setUser_type] = useState("client");
+  const [userType, setUserType] = useState(USER_TYPES.CLIENT);
+  const [showEmailValidationMessage, setShowEmailValidationMessage] =
+    useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
-    // Champs spécifiques entreprise
+    // Champs entreprise
     siret: "",
     logo: null,
     ville: "",
     region: "",
     activitySector: "",
     documents: null,
-    // Champs spécifiques client
+    // Champs client
     address: "",
     isWholesaler: false,
   });
@@ -43,7 +52,7 @@ const Register = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : files ? files[0] : value,
     });
-    // Effacer l'erreur du champ lorsqu'il est modifié
+
     if (fieldErrors[name]) {
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
@@ -53,83 +62,87 @@ const Register = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email) errors.email = ["L'email est requis"];
+    if (!formData.password) errors.password = ["Le mot de passe est requis"];
+    if (!formData.phone) errors.phone = ["Le téléphone est requis"];
+    if (!formData.name) errors.name = ["Le nom est requis"];
+
+    if (userType === USER_TYPES.ENTREPRISE) {
+      if (!formData.siret) errors.siret = ["Le SIRET est requis"];
+      if (!formData.documents) errors.documents = ["Les documents sont requis"];
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      setError("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-    setFieldErrors({});
 
     try {
-      // Préparation des données pour l'API
-      const userData = new FormData();
+      const formDataToSend = new FormData();
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("user_type", userType);
 
-      // Ajout des champs communs
-      userData.append("email", formData.email);
-      userData.append("password", formData.password);
-      userData.append("phone", formData.phone);
-      userData.append("user_type", user_type);
-
-      // Ajout des champs spécifiques
-      if (user_type === "client") {
-        userData.append("nom_complet", formData.name);
-        userData.append("address", formData.address);
-        userData.append("isWholesaler", formData.isWholesaler);
+      if (userType === USER_TYPES.CLIENT) {
+        formDataToSend.append("address", formData.address);
+        formDataToSend.append("isWholesaler", formData.isWholesaler);
+        formDataToSend.append("nom_complet", formData.name);
       } else {
-        userData.append("nom_entreprise", formData.name);
-        userData.append("siret", formData.siret);
-        userData.append("ville", formData.ville);
-        userData.append("region", formData.region);
-        userData.append("activitySector", formData.activitySector);
-        if (formData.documents) {
-          userData.append("documents", formData.documents);
-        }
-        if (formData.logo) {
-          userData.append("logo", formData.logo);
-        }
+        formDataToSend.append("nom_entreprise", formData.name);
+        formDataToSend.append("siret", formData.siret);
+        formDataToSend.append("ville", formData.ville);
+        formDataToSend.append("region", formData.region);
+        formDataToSend.append("activity_sector", formData.activitySector);
+        if (formData.documents)
+          formDataToSend.append("documents", formData.documents);
+        if (formData.logo) formDataToSend.append("logo", formData.logo);
       }
 
-      // Appel à l'API via le contexte d'authentification
-      const result = await register(userData);
+      const result = await register(formDataToSend);
+
+      if (!result) {
+        throw new Error("Pas de réponse du serveur");
+      }
+
       if (result.success) {
-        const successMessage =
-          user_type === "client"
-            ? "Votre compte client a été créé avec succès ! Redirection vers votre espace..."
-            : "Votre compte entreprise a été créé avec succès ! Redirection vers votre tableau de bord...";
-
-        toast.success(successMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          onClose: () => {
-            // Si l'inscription nécessite une confirmation, rediriger vers login
-            if (result.requiresConfirmation) {
-              navigate("/login", {
-                replace: true,
-                state: {
-                  message:
-                    "Veuillez vérifier votre email pour activer votre compte",
-                },
-              });
-            } else {
-              // Redirection normale selon le type d'utilisateur
-              const redirectPath =
-                user_type === "client" ? "/dashboardclient" : "/dashboard";
-
-              navigate(redirectPath, { replace: true });
-            }
-          },
-        });
+        if (result.autoLogin && userType === USER_TYPES.CLIENT) {
+          toast.success("Inscription réussie ! Redirection...", {
+            onClose: () => navigate("/", { replace: true }),
+          });
+        } else if (
+          result.requiresEmailValidation &&
+          userType === USER_TYPES.ENTREPRISE
+        ) {
+          setRegisteredEmail(formData.email);
+          setShowEmailValidationMessage(true);
+          toast.success("Vérifiez votre email pour activer votre compte");
+        } else {
+          toast.success("Inscription réussie !", {
+            onClose: () => navigate("/login", { replace: true }),
+          });
+        }
       } else {
-        // Gestion des erreurs
+        setError(result.message || "Erreur lors de l'inscription");
         if (result.errors) {
           setFieldErrors(result.errors);
         }
-        setError(result.message || "Erreur lors de l'inscription");
       }
     } catch (err) {
       console.error("Registration error:", err);
@@ -139,13 +152,54 @@ const Register = () => {
     }
   };
 
-  const getFieldError = (fieldName) => {
-    return fieldErrors[fieldName] ? (
-      <span className="text-red-500 text-sm mt-1">
-        {fieldErrors[fieldName][0]}
-      </span>
-    ) : null;
-  };
+  if (showEmailValidationMessage) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-600 to-green-400 p-4 flex items-center justify-center">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiMail className="w-8 h-8 text-green-600" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Vérifiez votre email
+            </h2>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-sm text-green-800 font-medium mb-1">
+                    Inscription réussie !
+                  </p>
+                  <p className="text-sm text-green-700">
+                    Email envoyé à <strong>{registeredEmail}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-gray-600 text-sm mb-6">
+              <p>Votre compte sera activé après validation de votre email.</p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() =>
+                  navigate("/login", {
+                    state: { email: registeredEmail },
+                  })
+                }
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg"
+              >
+                Aller à la connexion
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-600 to-green-400 p-4 flex items-center justify-center">
@@ -166,43 +220,41 @@ const Register = () => {
             </div>
           )}
 
-          {/* Sélecteur de type d'utilisateur */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex rounded-md shadow-sm">
               <button
                 type="button"
-                onClick={() => setUser_type("client")}
+                onClick={() => setUserType(USER_TYPES.CLIENT)}
                 className={`px-6 py-3 text-sm font-medium rounded-l-lg ${
-                  user_type === "client"
+                  userType === USER_TYPES.CLIENT
                     ? "bg-green-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 <FiUser className="inline mr-2" />
-                Je suis un client
+                Client
               </button>
               <button
                 type="button"
-                onClick={() => setUser_type("entreprise")}
+                onClick={() => setUserType(USER_TYPES.ENTREPRISE)}
                 className={`px-6 py-3 text-sm font-medium rounded-r-lg ${
-                  user_type === "entreprise"
+                  userType === USER_TYPES.ENTREPRISE
                     ? "bg-green-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 <FiBriefcase className="inline mr-2" />
-                Je suis une entreprise
+                Entreprise
               </button>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Champs communs à tous les utilisateurs */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-medium mb-2">
-                  {user_type === "entreprise"
-                    ? "Nom de l'entreprise"
+                  {userType === USER_TYPES.ENTREPRISE
+                    ? "Nom entreprise"
                     : "Nom complet"}
                 </label>
                 <input
@@ -215,7 +267,11 @@ const Register = () => {
                   } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   required
                 />
-                {getFieldError("name")}
+                {fieldErrors.name && (
+                  <span className="text-red-500 text-sm mt-1">
+                    {fieldErrors.name[0]}
+                  </span>
+                )}
               </div>
 
               <div>
@@ -232,7 +288,11 @@ const Register = () => {
                   } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   required
                 />
-                {getFieldError("email")}
+                {fieldErrors.email && (
+                  <span className="text-red-500 text-sm mt-1">
+                    {fieldErrors.email[0]}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -258,7 +318,11 @@ const Register = () => {
                     required
                   />
                 </div>
-                {getFieldError("password")}
+                {fieldErrors.password && (
+                  <span className="text-red-500 text-sm mt-1">
+                    {fieldErrors.password[0]}
+                  </span>
+                )}
               </div>
 
               <div>
@@ -275,12 +339,15 @@ const Register = () => {
                   } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   required
                 />
-                {getFieldError("phone")}
+                {fieldErrors.phone && (
+                  <span className="text-red-500 text-sm mt-1">
+                    {fieldErrors.phone[0]}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Champs spécifiques aux clients */}
-            {user_type === "client" && (
+            {userType === USER_TYPES.CLIENT && (
               <>
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
@@ -295,7 +362,6 @@ const Register = () => {
                       fieldErrors.address ? "border-red-500" : "border-gray-300"
                     } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   />
-                  {getFieldError("address")}
                 </div>
 
                 <div className="flex items-center">
@@ -304,52 +370,48 @@ const Register = () => {
                     name="isWholesaler"
                     checked={formData.isWholesaler}
                     onChange={handleChange}
-                    id="isWholesaler"
                     className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
-                  <label
-                    htmlFor="isWholesaler"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
+                  <label className="ml-2 block text-sm text-gray-700">
                     Je suis un grossiste
                   </label>
                 </div>
               </>
             )}
 
-            {/* Champs spécifiques aux entreprises */}
-            {user_type === "entreprise" && (
+            {userType === USER_TYPES.ENTREPRISE && (
               <>
-                {/* Première ligne : SIRET, Secteur d'activité */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      SIRET/NIU <span className="text-red-500">*</span>
+                      SIRET/NIU
                     </label>
                     <input
                       type="text"
                       name="siret"
                       value={formData.siret}
                       onChange={handleChange}
-                      placeholder="Ex: 12345678901234"
                       className={`w-full px-4 py-3 border ${
                         fieldErrors.siret ? "border-red-500" : "border-gray-300"
                       } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                       required
                     />
-                    {getFieldError("siret")}
+                    {fieldErrors.siret && (
+                      <span className="text-red-500 text-sm mt-1">
+                        {fieldErrors.siret[0]}
+                      </span>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      Secteur d'activité <span className="text-red-500">*</span>
+                      Secteur d'activité
                     </label>
                     <input
                       type="text"
                       name="activitySector"
                       value={formData.activitySector}
                       onChange={handleChange}
-                      placeholder="Ex: Commerce de détail, Services..."
                       className={`w-full px-4 py-3 border ${
                         fieldErrors.activitySector
                           ? "border-red-500"
@@ -357,52 +419,52 @@ const Register = () => {
                       } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                       required
                     />
-                    {getFieldError("activitySector")}
+                    {fieldErrors.activitySector && (
+                      <span className="text-red-500 text-sm mt-1">
+                        {fieldErrors.activitySector[0]}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Deuxième ligne : Ville, Région */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
                       <FiMapPin className="inline mr-1" />
-                      Ville <span className="text-red-500">*</span>
+                      Ville
                     </label>
                     <input
                       type="text"
                       name="ville"
                       value={formData.ville}
                       onChange={handleChange}
-                      placeholder="Ex: Paris, Lyon, Marseille..."
                       className={`w-full px-4 py-3 border ${
                         fieldErrors.ville ? "border-red-500" : "border-gray-300"
                       } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                       required
                     />
-                    {getFieldError("ville")}
                   </div>
 
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
                       <FiMapPin className="inline mr-1" />
-                      Région <span className="text-red-500">*</span>
+                      Région
                     </label>
                     <input
                       type="text"
                       name="region"
                       value={formData.region}
                       onChange={handleChange}
-                      placeholder="Ex: Île-de-France, Auvergne-Rhône-Alpes..."
                       className={`w-full px-4 py-3 border ${
-                        fieldErrors.region ? "border-red-500" : "border-gray-300"
+                        fieldErrors.region
+                          ? "border-red-500"
+                          : "border-gray-300"
                       } rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                       required
                     />
-                    {getFieldError("region")}
                   </div>
                 </div>
 
-                {/* Upload du logo */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     <FiImage className="inline mr-1" />
@@ -414,7 +476,7 @@ const Register = () => {
                         <FiImage className="text-3xl text-gray-400 mb-2" />
                         <p className="text-sm text-gray-500 text-center">
                           <span className="font-medium text-green-600">
-                            Cliquez pour uploader votre logo
+                            Cliquez pour uploader
                           </span>{" "}
                           ou glissez-déposez
                         </p>
@@ -432,19 +494,17 @@ const Register = () => {
                     </label>
                   </div>
                   {formData.logo && (
-                    <p className="mt-2 text-sm text-green-600 flex items-center">
-                      <FiCheck className="mr-1" />
-                      Logo sélectionné: {formData.logo.name}
+                    <p className="mt-2 text-sm text-green-600">
+                      <FiCheck className="inline mr-1" />
+                      {formData.logo.name}
                     </p>
                   )}
-                  {getFieldError("logo")}
                 </div>
 
-                {/* Upload des documents */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     <FiUpload className="inline mr-1" />
-                    Documents officiels (Récépissé, K-bis...)
+                    Documents officiels
                   </label>
                   <div className="flex items-center justify-center w-full">
                     <label className="flex flex-col w-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
@@ -452,7 +512,7 @@ const Register = () => {
                         <FiUpload className="text-3xl text-gray-400 mb-2" />
                         <p className="text-sm text-gray-500 text-center">
                           <span className="font-medium text-green-600">
-                            Cliquez pour uploader vos documents
+                            Cliquez pour uploader
                           </span>{" "}
                           ou glissez-déposez
                         </p>
@@ -466,16 +526,21 @@ const Register = () => {
                         onChange={handleChange}
                         className="hidden"
                         accept=".pdf,.jpg,.jpeg,.png"
+                        required
                       />
                     </label>
                   </div>
                   {formData.documents && (
-                    <p className="mt-2 text-sm text-green-600 flex items-center">
-                      <FiCheck className="mr-1" />
-                      Document sélectionné: {formData.documents.name}
+                    <p className="mt-2 text-sm text-green-600">
+                      <FiCheck className="inline mr-1" />
+                      {formData.documents.name}
                     </p>
                   )}
-                  {getFieldError("documents")}
+                  {fieldErrors.documents && (
+                    <span className="text-red-500 text-sm mt-1">
+                      {fieldErrors.documents[0]}
+                    </span>
+                  )}
                 </div>
               </>
             )}
@@ -510,11 +575,11 @@ const Register = () => {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Traitement en cours...
+                    Traitement...
                   </>
                 ) : (
-                  `Créer mon compte ${
-                    user_type === "entreprise" ? "entreprise" : "client"
+                  `S'inscrire en tant que ${
+                    userType === USER_TYPES.ENTREPRISE ? "entreprise" : "client"
                   }`
                 )}
               </button>
@@ -523,7 +588,7 @@ const Register = () => {
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Déjà inscrit ?{" "}
+              Déjà un compte ?{" "}
               <Link
                 to="/login"
                 className="font-medium text-green-600 hover:text-green-700"

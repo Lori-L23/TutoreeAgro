@@ -3,11 +3,12 @@ import axios from "axios";
 
 const Api = axios.create({
   baseURL: "http://localhost:8000",
-  headers: {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "X-Requested-With": "XMLHttpRequest"
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  //   "Accept": "multipart/form-data, application/json",
+  //   "X-Requested-With": "XMLHttpRequest"
+  // },
+  
   withCredentials: true
 });
 

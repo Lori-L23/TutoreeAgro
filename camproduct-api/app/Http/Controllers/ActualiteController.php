@@ -12,7 +12,8 @@ class ActualiteController extends Controller
      */
     public function index()
     {
-        //
+        $actualites = Actualite::all();
+        return response()->json($actualites);
     }
 
     /**
@@ -28,7 +29,16 @@ class ActualiteController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'required|string',
+            'date_publication' => 'required|date',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $actualite = Actualite::create($request->all());
+
+        return response()->json($actualite, 201);
     }
 
     /**

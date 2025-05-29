@@ -10,7 +10,6 @@ import palme from '../assets/palme.jpg';
 import manioc from '../assets/manioc.avif';
 import cafe from '../assets/cafe.avif';
 
-// Composant réutilisable pour les cartes de produits
 const ProductCard = ({ product }) => (
   <motion.div
     whileHover={{ y: -5 }}
@@ -51,7 +50,6 @@ const ProductCard = ({ product }) => (
   </motion.div>
 );
 
-// Composant réutilisable pour les filtres
 const FilterSection = ({ title, icon, children }) => (
   <div className="mb-6">
     <div className="flex items-center mb-3">
@@ -68,9 +66,10 @@ export default function Produits() {
   const [activeFilters, setActiveFilters] = useState([]);
   const [priceRange, setPriceRange] = useState([500, 10000]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Données factices pour la démo
-  const products = [
+  const allProducts = [
     { 
       id: 1, 
       name: "Jus d'Ananas Bio", 
@@ -156,6 +155,20 @@ export default function Produits() {
     },
   ];
 
+  // Filtrer les produits en fonction de la recherche
+  const filteredProducts = allProducts.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         product.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilters = activeFilters.length === 0 || 
+      activeFilters.some(filter => 
+        product.category.includes(filter.replace('region-', '').replace('cert-', '')) ||
+        product.region.includes(filter.replace('region-', '').replace('cert-', '')));
+
+    return matchesSearch && matchesFilters;
+  });
+
   const categories = [
     { name: "Boissons", count: 45 },
     { name: "Épices", count: 32 },
@@ -196,6 +209,11 @@ export default function Produits() {
     setPriceRange(newPriceRange);
   };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    // La recherche est déjà gérée par le state searchQuery
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -222,30 +240,82 @@ export default function Produits() {
             Découvrez notre sélection de produits agroalimentaires camerounais de qualité.
           </motion.p>
           
-          {/* Barre de recherche */}
-          <motion.div
+          {/* Barre de recherche améliorée */}
+          <motion.form
+            onSubmit={handleSearch}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
             className="relative max-w-xl mt-6"
           >
-            <input 
-              type="text" 
-              placeholder="Rechercher un produit..." 
-              className="w-full p-4 rounded-xl pl-12 text-gray-800 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm" 
-            />
-            <Search className="absolute left-4 top-4 text-gray-500" size={20} />
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="absolute right-2 top-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium"
-            >
-              Rechercher
-            </motion.button>
-          </motion.div>
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Rechercher un produit, une marque ou une catégorie..." 
+                className="w-full p-4 rounded-xl pl-12 text-gray-800 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm pr-32" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search className="absolute left-4 top-4 text-gray-500" size={20} />
+              <div className="absolute right-2 top-2 flex">
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="p-2 text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium ml-2"
+                >
+                  Rechercher
+                </motion.button>
+              </div>
+            </div>
+            {searchQuery && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200"
+              >
+                {filteredProducts.slice(0, 3).map(product => (
+                  <div 
+                    key={product.id}
+                    className="p-3  hover:bg-gray-50 cursor-pointer flex items-center"
+                    onClick={() => {
+                      setSearchQuery(product.name);
+                      // Vous pourriez ajouter une navigation vers le produit ici
+                        navigate(`/produit/${product.id}`);
+                    }}
+                  >
+                    <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded mr-3 " />
+                    <div>
+                      <p className="font-medium text-gray-700">{product.name}</p>
+                      <p className="text-sm text-gray-600">{product.company}</p>
+                    </div>
+                  </div>
+                ))}
+                {filteredProducts.length > 3 && (
+                  <div className="p-3 text-sm text-center text-gray-500 border-t">
+                    {filteredProducts.length - 3} autres résultats...
+                  </div>
+                )}
+                {filteredProducts.length === 0 && (
+                  <div className="p-3 text-sm text-center text-gray-500">
+                    Aucun résultat trouvé
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </motion.form>
         </div>
       </motion.div>
-      
+
       {/* Bouton filtre mobile */}
       <div className="md:hidden container mx-auto px-4 py-4">
         <motion.button
@@ -503,7 +573,7 @@ export default function Produits() {
               className="bg-white rounded-xl shadow p-4 mb-6"
             >
               <div className="flex flex-wrap justify-between items-center">
-                <p className="text-sm text-gray-600">{products.length} produits trouvés</p>
+                <p className="text-sm text-gray-600">{filteredProducts.length} produits trouvés</p>
                 <div className="flex items-center">
                   <span className="mr-2 text-sm text-gray-600">Trier par:</span>
                   <div className="relative">
@@ -550,7 +620,7 @@ export default function Produits() {
             
             {/* Grille de produits */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product, index) => (
+              {filteredProducts.map((product, index) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -564,24 +634,45 @@ export default function Produits() {
             </div>
             
             {/* Pagination */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="mt-8 flex justify-center"
-            >
-              <nav className="inline-flex rounded-md shadow">
-                <button className="py-2 px-3 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 flex items-center">
-                  <ChevronLeft className="h-4 w-4" />
+            {filteredProducts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="mt-8 flex justify-center"
+              >
+                <nav className="inline-flex rounded-md shadow">
+                  <button className="py-2 px-3 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 flex items-center">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button className="py-2 px-4 bg-green-700 text-white border border-green-700">1</button>
+                  <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">2</button>
+                  <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">3</button>
+                  <button className="py-2 px-3 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 flex items-center">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </nav>
+              </motion.div>
+            )}
+            
+            {filteredProducts.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12"
+              >
+                <p className="text-gray-500 text-lg">Aucun produit ne correspond à votre recherche</p>
+                <button 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveFilters([]);
+                  }}
+                  className="mt-4 text-green-600 hover:underline"
+                >
+                  Réinitialiser les filtres
                 </button>
-                <button className="py-2 px-4 bg-green-700 text-white border border-green-700">1</button>
-                <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">2</button>
-                <button className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">3</button>
-                <button className="py-2 px-3 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 flex items-center">
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </nav>
-            </motion.div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>

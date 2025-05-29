@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('categorie');
             $table->text('description');
             $table->decimal('prix', 10, 2);
-            $table->text('ingredients')->nullable();
+            // $table->text('ingredients')->nullable();
             $table->string('region')->nullable();
             $table->string('image')->nullable();
             $table->boolean('disponible_en_gros')->default(false);//disponible en gros ou non

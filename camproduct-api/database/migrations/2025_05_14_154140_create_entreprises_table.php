@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('activity_sector')->nullable();
             $table->string('documents_path')->nullable();
             $table->enum('status', ['en_attente', 'approuve', 'rejete'])->default('en_attente');
-            // $table->date('date_verification')->nullable();
+            // $table->date('date_veri fication')->nullable();
             $table->string('region');
             $table->string('ville');
             // $table->text('description')->nullable();

@@ -12,7 +12,8 @@ class ClientsController extends Controller
      */
     public function index()
     {
-        //
+        $clients = Clients::all();
+        return response()->json($clients);
     }
 
     /**
@@ -28,7 +29,7 @@ class ClientsController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        
     }
 
     /**
@@ -44,7 +45,7 @@ class ClientsController extends Controller
      */
     public function edit(Clients $clients)
     {
-        //
+      
     }
 
     /**

@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('commandes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('produit_id')->constrained('produits')->onDelete('cascade');
+            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
+            $table->foreignId('entreprise_id')->constrained('entreprises')->onDelete('cascade');
+            $table->integer('quantite');
+            $table->decimal('prix_total', 10, 2);
+            $table->enum('statut', ['en_attente', 'confirme', 'annule'])->default('en_attente');
+            $table->string('adresse_livraison')->nullable();
+
             $table->timestamps();
         });
     }

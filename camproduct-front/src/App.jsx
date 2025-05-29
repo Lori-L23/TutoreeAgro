@@ -19,6 +19,7 @@ import AdminDashboard from "./admin/dashboard";
 import Dashboardentre from "./entreprise/dashboard";
 import AdminAccount from "./admin/Compte";
 import AdminUsers from "./admin/AdminUsers";
+import EmailValidation from "./components/EmailValidation";
 
 import { AuthProvider } from "./Contexts/Authcontexts";
 
@@ -43,13 +44,13 @@ function App() {
               <Route path="/dashboardadmin" element={<AdminDashboard />} />
               <Route path="/admincompte" element={<AdminAccount />} />
               <Route path="/adminusers" element={<AdminUsers />} />
-              {/* <Route path="/dashboardadmin" element={<Dashboardentre />} /> */}
 
             </Route>  
-            {/* <Route path="/admin " element={<Dashboard />} /> */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/validate-email/:token" element={<EmailValidation />} />
+
           </Routes>
         </BrowserRouter>
       </AuthProvider>

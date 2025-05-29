@@ -46,7 +46,6 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      //   Api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       const response = await Api.get("/api/user-with-profile");
 
       if (response.data.message) {
@@ -76,7 +75,7 @@ export const AuthProvider = ({ children }) => {
         error.response?.status === 401 ||
         error.message.includes("Non autorisé")
       ) {
-        logout(); // Maintenant logout est accessible
+        logout();
       } else {
         setAuthState((prev) => ({
           ...prev,
@@ -85,9 +84,9 @@ export const AuthProvider = ({ children }) => {
         }));
       }
     }
-  }, [logout]); // Ajoutez logout comme dépendance
+  }, [logout]);
 
-  // Puis déclarez login qui utilise loadUserData
+  // Login function
   const login = useCallback(
     async (email, password) => {
       try {
@@ -134,43 +133,7 @@ export const AuthProvider = ({ children }) => {
     [loadUserData]
   );
 
-  // Enfin register
-  // const register = useCallback(
-  //   async (userData) => {
-  //     try {
-  //       setAuthState((prev) => ({ ...prev, loading: true, error: null }));
-  //       await Api.get("/sanctum/csrf-cookie");
-  //       const response = await Api.post("/api/register", userData);
-
-  //       if (response.data?.token) {
-  //         localStorage.setItem("auth_token", response.data.token);
-  //         await loadUserData();
-  //         return { success: true };
-  //       }
-
-  //       throw new Error("Réponse d'inscription incomplète");
-  //     } catch (error) {
-  //       console.error("Erreur d'inscription:", error);
-  //       const errorMessage =
-  //         error.response?.data?.message || "Erreur lors de l'inscription";
-
-  //       setAuthState((prev) => ({
-  //         ...prev,
-  //         loading: false,
-  //         error: errorMessage,
-  //       }));
-
-  //       return {
-  //         success: false,
-  //         message: errorMessage,
-  //         errors: error.response?.data?.errors,
-  //       };
-  //     }
-  //   },
-  //   [loadUserData]
-  // );
-  // Dans Authcontexts.jsx, modifiez la fonction register comme suit :
-
+  // Register function avec gestion de la validation email
   const register = useCallback(
     async (userData) => {
       try {
@@ -178,34 +141,34 @@ export const AuthProvider = ({ children }) => {
         await Api.get("/sanctum/csrf-cookie");
         const response = await Api.post("/api/register", userData);
 
-        // Debug: Loggez la réponse pour voir sa structure
         console.log("Réponse d'inscription:", response.data);
 
-        // Vérifiez différentes structures possibles de réponse
+        // Cas 1: Inscription réussie avec token (clients - connexion automatique)
         if (response.data?.token) {
           localStorage.setItem("auth_token", response.data.token);
-          Api.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${response.data.token}`;
+          Api.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
           await loadUserData();
-          return { success: true };
-        }
-        // Cas où l'inscription réussit mais sans token (confirmation email par exemple)
-        else if (
-          response.data?.success ||
-          response.status === 201 ||
-          response.status === 200
-        ) {
-          return {
+          return { 
             success: true,
+            autoLogin: true
+          };
+        }
+        
+        // Cas 2: Inscription réussie sans token (entreprises - validation email requise)
+        else if (response.data?.success || response.status === 201 || response.status === 200) {
+          setAuthState((prev) => ({ ...prev, loading: false }));
+          return { 
+            success: true, 
             message: response.data?.message || "Inscription réussie",
-            requiresConfirmation: !response.data?.token, // Indique si une confirmation est nécessaire
+            requiresEmailValidation: true,
+            userType: response.data?.user_type || 'entreprise'
           };
         }
 
-        // Si aucune condition n'est remplie, loggez la réponse pour diagnostic
+        // Cas 3: Structure de réponse inattendue
         console.error("Structure de réponse inattendue:", response.data);
         throw new Error("Réponse d'inscription incomplète");
+        
       } catch (error) {
         console.error("Erreur d'inscription:", error);
         const errorMessage =
@@ -227,6 +190,44 @@ export const AuthProvider = ({ children }) => {
     [loadUserData]
   );
 
+  // Fonction pour renvoyer l'email de validation
+  const resendValidationEmail = useCallback(async (email) => {
+    try {
+      await Api.get("/sanctum/csrf-cookie");
+      const response = await Api.post("/api/resend-validation-email", { email });
+      
+      return {
+        success: true,
+        message: response.data?.message || "Email de validation renvoyé"
+      };
+    } catch (error) {
+      console.error("Erreur renvoi email:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Erreur lors du renvoi de l'email"
+      };
+    }
+  }, []);
+
+  // Fonction pour vérifier le token de validation email
+  const validateEmail = useCallback(async (token) => {
+    try {
+      await Api.get("/sanctum/csrf-cookie");
+      const response = await Api.post("/api/validate-email", { token });
+      
+      return {
+        success: true,
+        message: response.data?.message || "Email validé avec succès"
+      };
+    } catch (error) {
+      console.error("Erreur validation email:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Token de validation invalide"
+      };
+    }
+  }, []);
+
   // Chargement initial
   useEffect(() => {
     loadUserData();
@@ -234,9 +235,12 @@ export const AuthProvider = ({ children }) => {
 
   const contextValue = {
     ...authState,
+ 
     login,
     register,
     logout,
+    resendValidationEmail,
+    validateEmail,
     isAuthenticated: !!authState.user,
     refetchUser: loadUserData,
   };
