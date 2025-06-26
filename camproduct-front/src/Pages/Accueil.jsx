@@ -17,15 +17,7 @@ import cacao from "../assets/cacao2.avif";
 import fruits from "../assets/3.avif";
 import epices from "../assets/epices.png";
 import api from "../assets/api.png";
-// Images importées du code original
-// const back = '../assets/2.avif';
-// const ananas = '../assets/ananas.avif';
-// const piment = '../assets/piment.avif';
-// const miel = '../assets/miel1.avif';
-// const cacao = '../assets/cacao2.avif';
-// const fruits = '../assets/3.avif';
-// const epices = '../assets/epices.png';
-// const api = '../assets/api.png';
+
 
 // Simulation d'une base de données avec vos images originales
 const DATABASE = {
@@ -58,7 +50,7 @@ const DATABASE = {
     {
       id: 3,
       name: "Miel de Fleurs Sauvages",
-      price: "3500 FCFA",
+      price: "3300 FCFA",
       rating: 5.0,
       image: miel,
       company: "Apiculture Durable",
