@@ -15,7 +15,7 @@ import Produits from "./Pages/Produits";
 import Mesproduits from "./entreprise/Produits";
 import CompteEntreprise from "./entreprise/Compte";
 import Dashboardclient from "./client/dashboard";
-import AdminDashboard from "./admin/dashboard";
+import AdminDashboard from "./admin/Dashboard";
 import Dashboardentre from "./entreprise/dashboard";
 import AdminAccount from "./admin/Compte";
 import AdminUsers from "./admin/AdminUsers";
