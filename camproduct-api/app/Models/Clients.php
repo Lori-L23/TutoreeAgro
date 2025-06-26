@@ -17,4 +17,14 @@ class Clients extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function commandes()
+    {
+        return $this->hasMany(Commande::class);
+    }
+    public function produits()
+    {
+        return $this->belongsToMany(Produit::class, 'client_produit')
+            ->withPivot('quantity', 'price')
+            ->withTimestamps(); 
+    }
 }

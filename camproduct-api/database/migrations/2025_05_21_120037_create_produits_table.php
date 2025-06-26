@@ -15,21 +15,27 @@ return new class extends Migration
             $table->id();
             $table->foreignId('entreprise_id')->constrained()->onDelete('cascade');
             $table->string('nom');
-            $table->string('categorie');
             $table->text('description');
             $table->decimal('prix', 10, 2);
-            // $table->text('ingredients')->nullable();
-            $table->string('region')->nullable();
-            $table->string('image')->nullable();
-            $table->boolean('disponible_en_gros')->default(false);//disponible en gros ou non
-            $table->boolean('actif')->default(true);//disponible ou non
-            $table->enum('status', ['en_attente', 'approuve', 'rejete'])->default('en_attente');
-            // $table->date('date_ajout')->nullable();
-            $table->integer('quantite_stock');
-            $table->integer('quantite_min_gros');
-            // $table->integer('nombre_de vues');
-
-            $table->date('date_modification')->nullable();
+            $table->decimal('prix_promo', 10, 2)->nullable();
+            $table->integer('stock')->default(10);
+            $table->integer('stock_alerte')->default(5);
+            $table->string('categorie');
+            $table->string('sous_categorie')->nullable();
+            $table->enum('statut', ['actif', 'inactif', 'brouillon'])->default('actif');
+            $table->json('images')->nullable();
+            $table->integer('ventes')->default(0);
+            $table->integer('vues')->default(0);
+            $table->integer('favoris')->default(0);
+            $table->float('notation')->default(0);
+            $table->integer('nombre_avis')->default(0);
+            $table->boolean('visible')->default(true);
+            $table->boolean('en_promotion')->default(false);
+            $table->string('poids')->nullable();
+            $table->string('origine')->nullable();
+            $table->json('certifications')->nullable();
+            $table->string('image_principale')->nullable(); // Ajoutez ce champ
+            // $table->json('images')->nullable(); // Conservez ce champ pour d'autres images
             $table->timestamps();
         });
     }

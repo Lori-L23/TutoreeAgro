@@ -5,24 +5,22 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'client',
-    status: 'actif',
+    user_type: 'client', // Changé de user_type à role pour cohérence
   });
 
+  // Initialisation du formulaire
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
+        name: user.name || '',
+        email: user.email || '',
+        user_type: user.user_type || 'client', // Utilisation de role au lieu de user_type
       });
     } else {
       setFormData({
         name: '',
         email: '',
-        role: 'client',
-        status: 'actif',
+        user_type: 'client',
       });
     }
   }, [user]);
@@ -34,19 +32,21 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const updatedUser = {
+    onSave({
       ...formData,
-      id: user ? user.id : Date.now(), // ID simulé si création
-      lastLogin: user?.lastLogin || new Date().toLocaleDateString(),
-      registeredAt: user?.registeredAt || new Date().toLocaleDateString(),
-    };
-    onSave(updatedUser);
+      id: user?.id || Date.now(),
+    });
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
+    <Dialog 
+      open={isOpen} 
+      onClose={onClose} 
+      className="fixed z-50 inset-0 overflow-y-auto"
+    >
       <div className="flex items-center justify-center min-h-screen px-4">
         <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+        
         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 z-50 relative">
           <Dialog.Title className="text-xl font-semibold mb-4">
             {user ? 'Modifier Utilisateur' : 'Ajouter Utilisateur'}
@@ -54,53 +54,46 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nom</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Nom
+              </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 p-2"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 p-2"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Rôle</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Rôle
+              </label>
               <select
-                name="role"
-                value={formData.role}
+                name="user_type"
+                value={formData.user_type}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 p-2"
               >
                 <option value="admin">Administrateur</option>
                 <option value="entreprise">Entreprise</option>
                 <option value="client">Client</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Statut</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="actif">Actif</option>
-                <option value="inactif">Inactif</option>
               </select>
             </div>
 

@@ -45,6 +45,7 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+            // 'image_principale' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ],
 
         's3' => [

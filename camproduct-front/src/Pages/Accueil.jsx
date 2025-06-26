@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import back from "../assets/2.avif";
-import ananas from "../assets/ananas.avif";
+import ananas from "../assets/ananas.jpg";
 import piment from "../assets/piment.avif";
 import miel from "../assets/miel1.avif";
 import cacao from "../assets/cacao2.avif";

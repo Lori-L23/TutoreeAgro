@@ -1,4 +1,7 @@
+"use client";
 import React, { useState, useEffect } from "react";
+
+import axios from "axios";
 import {
   FaPlus,
   FaEdit,
@@ -26,204 +29,97 @@ import {
   FaSave,
   FaSpinner,
 } from "react-icons/fa";
-
-// Simulation d'une API backend
-const API = {
-  async getProduits() {
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const produits = JSON.parse(localStorage.getItem('produits') || '[]');
-    if (produits.length === 0) {
-      // Données par défaut si aucun produit n'existe
-      const defaultProduits = [
-        {
-          id: 1,
-          nom: "Ananas Victoria Bio",
-          description: "Ananas frais et bio cultivé localement dans le Littoral",
-          prix: 1500,
-          prixPromo: null,
-          stock: 25,
-          stockAlerte: 10,
-          categorie: "Fruits",
-          sousCategorie: "Fruits tropicaux",
-          statut: "actif",
-          dateCreation: new Date().toISOString(),
-          derniereModification: new Date().toISOString(),
-          images: ["https://via.placeholder.com/300/300"],
-          ventes: 89,
-          vues: 1250,
-          favoris: 45,
-          notation: 4.8,
-          nombreAvis: 23,
-          visible: true,
-          enPromotion: false,
-          poids: "1.5kg",
-          origine: "Littoral, Cameroun",
-          certifications: ["Bio", "Commerce équitable"]
-        },
-        {
-          id: 2,
-          nom: "Mangues Kent Premium",
-          description: "Mangues Kent de qualité premium, sucrées et juteuses",
-          prix: 2000,
-          prixPromo: 1750,
-          stock: 12,
-          stockAlerte: 15,
-          categorie: "Fruits",
-          sousCategorie: "Fruits tropicaux",
-          statut: "actif",
-          dateCreation: new Date().toISOString(),
-          derniereModification: new Date().toISOString(),
-          images: ["https://via.placeholder.com/300/300"],
-          ventes: 76,
-          vues: 980,
-          favoris: 32,
-          notation: 4.6,
-          nombreAvis: 18,
-          visible: true,
-          enPromotion: true,
-          poids: "500g",
-          origine: "Nord, Cameroun",
-          certifications: ["Premium"]
-        }
-      ];
-      localStorage.setItem('produits', JSON.stringify(defaultProduits));
-      return defaultProduits;
-    }
-    return produits;
-  },
-  async createProduit(produit) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const produits = JSON.parse(localStorage.getItem('produits') || '[]');
-    const newProduit = {
-      ...produit,
-      id: Date.now(),
-      dateCreation: new Date().toISOString(),
-      derniereModification: new Date().toISOString(),
-      ventes: 0,
-      vues: 0,
-      favoris: 0,
-      notation: 0,
-      nombreAvis: 0
-    };
-
-    produits.push(newProduit);
-    localStorage.setItem('produits', JSON.stringify(produits));
-    return newProduit;
-  },
-  async updateProduit(id, updates) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const produits = JSON.parse(localStorage.getItem('produits') || '[]');
-    const index = produits.findIndex(p => p.id === id);
-
-    if (index !== -1) {
-      produits[index] = {
-        ...produits[index],
-        ...updates,
-        derniereModification: new Date().toISOString()
-      };
-      localStorage.setItem('produits', JSON.stringify(produits));
-      return produits[index];
-    }
-    throw new Error('Produit non trouvé');
-  },
-  async deleteProduit(id) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const produits = JSON.parse(localStorage.getItem('produits') || '[]');
-    const filteredProduits = produits.filter(p => p.id !== id);
-    localStorage.setItem('produits', JSON.stringify(filteredProduits));
-    return true;
-  },
-  async bulkUpdate(ids, updates) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const produits = JSON.parse(localStorage.getItem('produits') || '[]');
-    const updatedProduits = produits.map(p =>
-      ids.includes(p.id)
-        ? { ...p, ...updates, derniereModification: new Date().toISOString() }
-        : p
-    );
-    localStorage.setItem('produits', JSON.stringify(updatedProduits));
-    return updatedProduits;
-  }
-};
+import Api from "../Services/Api";
 
 // Composant Modal pour le formulaire de création
 const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    nom: '',
-    description: '',
-    prix: '',
-    prixPromo: '',
-    stock: '',
-    stockAlerte: '',
-    categorie: '',
-    sousCategorie: '',
-    statut: 'actif',
+    nom: "",
+    description: "",
+    prix: "",
+    prix_promo: "",
+    stock: "",
+    stock_alerte: "",
+    categorie: "",
+    sous_categorie: "",
+    statut: "actif",
     visible: true,
-    enPromotion: false,
-    poids: '',
-    origine: '',
-    certifications: []
+    en_promotion: false,
+    poids: "",
+    origine: "",
+    certifications: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   const categories = [
-    'Fruits',
-    'Légumes',
-    'Huiles',
-    'Épices & Condiments',
-    'Céréales',
-    'Produits Laitiers',
-    'Viandes & Poissons',
-    'Boissons'
+    "Fruits",
+    "Légumes",
+    "Huiles",
+    "Épices & Condiments",
+    "Céréales",
+    "Produits Laitiers",
+    "Viandes & Poissons",
+    "Boissons",
   ];
 
   const certificationOptions = [
-    'Bio',
-    'Commerce équitable',
-    'Premium',
-    'Artisanal',
-    'Naturel',
-    'Pur'
+    "Bio",
+    "Commerce équitable",
+    "Premium",
+    "Artisanal",
+    "Naturel",
+    "Pur",
   ];
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleCertificationChange = (certification) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       certifications: prev.certifications.includes(certification)
-        ? prev.certifications.filter(c => c !== certification)
-        : [...prev.certifications, certification]
+        ? prev.certifications.filter((c) => c !== certification)
+        : [...prev.certifications, certification],
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
-    if (!formData.description.trim()) newErrors.description = 'La description est requise';
-    if (!formData.prix || parseFloat(formData.prix) <= 0) newErrors.prix = 'Le prix doit être supérieur à 0';
-    if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Le stock ne peut pas être négatif';
-    if (!formData.stockAlerte || parseInt(formData.stockAlerte) < 0) newErrors.stockAlerte = 'Le stock d\'alerte ne peut pas être négatif';
-    if (!formData.categorie) newErrors.categorie = 'La catégorie est requise';
+    if (!formData.nom.trim()) newErrors.nom = "Le nom est requis";
+    if (!formData.description.trim())
+      newErrors.description = "La description est requise";
+    if (!formData.prix || parseFloat(formData.prix) <= 0)
+      newErrors.prix = "Le prix doit être supérieur à 0";
+    if (!formData.stock || parseInt(formData.stock) < 0)
+      newErrors.stock = "Le stock ne peut pas être négatif";
+    if (!formData.stock_alerte || parseInt(formData.stock_alerte) < 0)
+      newErrors.stock_alerte = "Le stock d'alerte ne peut pas être négatif";
+    if (!formData.categorie) newErrors.categorie = "La catégorie est requise";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -237,47 +133,76 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
     setIsSubmitting(true);
 
     try {
-      const dataToSubmit = {
-        ...formData,
-        prix: parseFloat(formData.prix),
-        prixPromo: formData.prixPromo ? parseFloat(formData.prixPromo) : null,
-        stock: parseInt(formData.stock),
-        stockAlerte: parseInt(formData.stockAlerte),
-        images: ["https://via.placeholder.com/300/300"] // Image par défaut
-      };
+      const formDataToSend = new FormData();
 
-      await onSubmit(dataToSubmit);
+      // Ajoutez tous les champs requis
+      formDataToSend.append("nom", formData.nom);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("prix", formData.prix);
+      formDataToSend.append("stock", formData.stock || 10); // Valeur par défaut si vide
+      formDataToSend.append("stock_alerte", formData.stock_alerte || 5); // Valeur par défaut si vide
+      formDataToSend.append("categorie", formData.categorie);
+      formData.append("image_principale", imageFile);
+
+      // Ajoutez les champs optionnels
+      if (formData.prix_promo)
+        formDataToSend.append("prix_promo", formData.prix_promo);
+      if (formData.sous_categorie)
+        formDataToSend.append("sous_categorie", formData.sous_categorie);
+      if (formData.poids) formDataToSend.append("poids", formData.poids);
+      if (formData.origine) formDataToSend.append("origine", formData.origine);
+
+      // Champs avec valeurs par défaut
+      formDataToSend.append("statut", formData.statut || "actif");
+      formDataToSend.append("visible", formData.visible ? "1" : "0");
+      formDataToSend.append("en_promotion", formData.en_promotion ? "1" : "0");
+
+      // Certifications
+      if (formData.certifications.length > 0) {
+        formDataToSend.append(
+          "certifications",
+          JSON.stringify(formData.certifications)
+        );
+      }
+
+      // Image
+      if (imageFile) {
+        formDataToSend.append("image_principale", imageFile);
+      }
+
+      await onSubmit(formDataToSend);
 
       // Reset form
       setFormData({
-        nom: '',
-        description: '',
-        prix: '',
-        prixPromo: '',
-        stock: '',
-        stockAlerte: '',
-        categorie: '',
-        sousCategorie: '',
-        statut: 'actif',
+        nom: "",
+        description: "",
+        prix: "",
+        prix_promo: "",
+        stock: "",
+        stock_alerte: "",
+        categorie: "",
+        sous_categorie: "",
+        statut: "actif",
         visible: true,
-        enPromotion: false,
-        poids: '',
-        origine: '',
-        certifications: []
+        en_promotion: false,
+        poids: "",
+        origine: "",
+        certifications: [],
       });
+      setPreviewImage(null);
+      setImageFile(null);
 
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      console.error("Erreur lors de la création:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Nouveau Produit</h2>
@@ -290,6 +215,60 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image principale */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image principale
+              </label>
+              <div className="flex items-center relative">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {previewImage ? (
+                      <img
+                        src={previewImage}
+                        alt="Preview"
+                        className="h-24 w-24 object-cover rounded-md"
+                      />
+                    ) : (
+                      <>
+                        <FaUpload className="w-8 h-8 mb-2 text-gray-500" />
+                        <p className="text-sm text-gray-500">
+                          <span className="font-semibold">
+                            Cliquez pour uploader
+                          </span>{" "}
+                          ou glissez-déposez
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF (max. 15MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    id="image_principale"
+                    name="image_principale"
+                    type="file"
+                    className="hidden"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                  />
+                </label>
+                {previewImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewImage(null);
+                      setImageFile(null);
+                    }}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 -mt-2 -mr-2"
+                    title="Supprimer l'image"
+                  >
+                    <FaTimes className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Nom */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -301,12 +280,15 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.nom}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.nom ? 'border-red-500' : 'border-gray-300'
+                  errors.nom ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Ex: Ananas Victoria Bio"
               />
-              {errors.nom && <p className="text-red-500 text-sm mt-1">{errors.nom}</p>}
+              {errors.nom && (
+                <p className="text-red-500 text-sm mt-1">{errors.nom}</p>
+              )}
             </div>
+
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -318,12 +300,17 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={handleInputChange}
                 rows="3"
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.description ? 'border-red-500' : 'border-gray-300'
+                  errors.description ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Décrivez votre produit..."
               />
-              {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.description}
+                </p>
+              )}
             </div>
+
             {/* Prix */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -335,14 +322,17 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.prix}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.prix ? 'border-red-500' : 'border-gray-300'
+                  errors.prix ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="1500"
                 min="0"
                 step="0.01"
               />
-              {errors.prix && <p className="text-red-500 text-sm mt-1">{errors.prix}</p>}
+              {errors.prix && (
+                <p className="text-red-500 text-sm mt-1">{errors.prix}</p>
+              )}
             </div>
+
             {/* Prix Promo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -350,8 +340,8 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="number"
-                name="prixPromo"
-                value={formData.prixPromo}
+                name="prix_promo"
+                value={formData.prix_promo}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="1200"
@@ -359,6 +349,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 step="0.01"
               />
             </div>
+
             {/* Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -370,13 +361,16 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.stock}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.stock ? 'border-red-500' : 'border-gray-300'
+                  errors.stock ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="25"
                 min="0"
               />
-              {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+              {errors.stock && (
+                <p className="text-red-500 text-sm mt-1">{errors.stock}</p>
+              )}
             </div>
+
             {/* Stock Alerte */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -384,17 +378,22 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="number"
-                name="stockAlerte"
-                value={formData.stockAlerte}
+                name="stock_alerte"
+                value={formData.stock_alerte}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.stockAlerte ? 'border-red-500' : 'border-gray-300'
+                  errors.stock_alerte ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="10"
                 min="0"
               />
-              {errors.stockAlerte && <p className="text-red-500 text-sm mt-1">{errors.stockAlerte}</p>}
+              {errors.stock_alerte && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.stock_alerte}
+                </p>
+              )}
             </div>
+
             {/* Catégorie */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -405,16 +404,21 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.categorie}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.categorie ? 'border-red-500' : 'border-gray-300'
+                  errors.categorie ? "border-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Sélectionner une catégorie</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
-              {errors.categorie && <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>}
+              {errors.categorie && (
+                <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>
+              )}
             </div>
+
             {/* Sous-catégorie */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -422,13 +426,14 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="text"
-                name="sousCategorie"
-                value={formData.sousCategorie}
+                name="sous_categorie"
+                value={formData.sous_categorie}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Ex: Fruits tropicaux"
               />
             </div>
+
             {/* Poids */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -443,6 +448,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 placeholder="Ex: 1.5kg, 500ml"
               />
             </div>
+
             {/* Origine */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -457,6 +463,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 placeholder="Ex: Littoral, Cameroun"
               />
             </div>
+
             {/* Statut */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,13 +480,14 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 <option value="brouillon">Brouillon</option>
               </select>
             </div>
+
             {/* Certifications */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Certifications
               </label>
               <div className="flex flex-wrap gap-2">
-                {certificationOptions.map(cert => (
+                {certificationOptions.map((cert) => (
                   <label key={cert} className="flex items-center">
                     <input
                       type="checkbox"
@@ -492,6 +500,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                 ))}
               </div>
             </div>
+
             {/* Options */}
             <div className="md:col-span-2">
               <div className="flex flex-wrap gap-4">
@@ -503,21 +512,26 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={handleInputChange}
                     className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Visible sur le site</span>
+                  <span className="ml-2 text-sm text-gray-700">
+                    Visible sur le site
+                  </span>
                 </label>
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    name="enPromotion"
-                    checked={formData.enPromotion}
+                    name="en_promotion"
+                    checked={formData.en_promotion}
                     onChange={handleInputChange}
                     className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">En promotion</span>
+                  <span className="ml-2 text-sm text-gray-700">
+                    En promotion
+                  </span>
                 </label>
               </div>
             </div>
           </div>
+
           {/* Boutons */}
           <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
             <button
@@ -537,7 +551,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              {isSubmitting ? 'Création...' : 'Créer le produit'}
+              {isSubmitting ? "Création..." : "Créer le produit"}
             </button>
           </div>
         </form>
@@ -546,60 +560,93 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-// Composant de modification de produit (EditProductModal)
+// Composant de modification de produit
 const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
   const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
     if (product) {
       setFormData({
         ...product,
-        prix: product.prix !== null ? product.prix.toString() : '',
-        prixPromo: product.prixPromo !== null ? product.prixPromo.toString() : '',
+        prix: product.prix !== null ? product.prix.toString() : "",
+        prix_promo:
+          product.prix_promo !== null ? product.prix_promo.toString() : "",
         stock: product.stock.toString(),
-        stockAlerte: product.stockAlerte.toString(),
+        stock_alerte: product.stock_alerte.toString(),
+        certifications: product.certifications || [],
       });
+      setPreviewImage(product.image_principale || product.images?.[0]);
     }
   }, [product]);
 
   const categories = [
-    'Fruits', 'Légumes', 'Huiles', 'Épices & Condiments', 'Céréales',
-    'Produits Laitiers', 'Viandes & Poissons', 'Boissons'
+    "Fruits",
+    "Légumes",
+    "Huiles",
+    "Épices & Condiments",
+    "Céréales",
+    "Produits Laitiers",
+    "Viandes & Poissons",
+    "Boissons",
   ];
+
   const certificationOptions = [
-    'Bio', 'Commerce équitable', 'Premium', 'Artisanal', 'Naturel', 'Pur'
+    "Bio",
+    "Commerce équitable",
+    "Premium",
+    "Artisanal",
+    "Naturel",
+    "Pur",
   ];
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleCertificationChange = (certification) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      certifications: prev.certifications.includes(certification)
-        ? prev.certifications.filter(c => c !== certification)
-        : [...prev.certifications, certification]
+      certifications: prev.certifications?.includes(certification)
+        ? prev.certifications.filter((c) => c !== certification)
+        : [...(prev.certifications || []), certification],
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
-    if (!formData.description.trim()) newErrors.description = 'La description est requise';
-    if (!formData.prix || parseFloat(formData.prix) <= 0) newErrors.prix = 'Le prix doit être supérieur à 0';
-    if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Le stock ne peut pas être négatif';
-    if (!formData.stockAlerte || parseInt(formData.stockAlerte) < 0) newErrors.stockAlerte = 'Le stock d\'alerte ne peut pas être négatif';
-    if (!formData.categorie) newErrors.categorie = 'La catégorie est requise';
+    if (!formData.nom?.trim()) newErrors.nom = "Le nom est requis";
+    if (!formData.description?.trim())
+      newErrors.description = "La description est requise";
+    if (!formData.prix || parseFloat(formData.prix) <= 0)
+      newErrors.prix = "Le prix doit être supérieur à 0";
+    if (!formData.stock || parseInt(formData.stock) < 0)
+      newErrors.stock = "Le stock ne peut pas être négatif";
+    if (!formData.stock_alerte || parseInt(formData.stock_alerte) < 0)
+      newErrors.stock_alerte = "Le stock d'alerte ne peut pas être négatif";
+    if (!formData.categorie) newErrors.categorie = "La catégorie est requise";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -610,17 +657,38 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
 
     setIsSubmitting(true);
     try {
-      const dataToSubmit = {
-        ...formData,
-        prix: parseFloat(formData.prix),
-        prixPromo: formData.prixPromo ? parseFloat(formData.prixPromo) : null,
-        stock: parseInt(formData.stock),
-        stockAlerte: parseInt(formData.stockAlerte),
-      };
-      await onSubmit(product.id, dataToSubmit);
+      const formDataToSend = new FormData();
+
+      // Ajout des champs standards
+      Object.keys(formData).forEach((key) => {
+        if (key === "certifications") {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (key !== "image_principale" && key !== "images") {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+
+      // Ajout de l'image si elle existe
+      if (imageFile) {
+        formDataToSend.append("image_principale", imageFile);
+      } else if (!previewImage) {
+        // Pour indiquer qu'on veut supprimer l'image existante
+        formDataToSend.append("remove_image", "true");
+      }
+
+      await onSubmit(product.id, formDataToSend);
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      console.error("Erreur lors de la mise à jour:", error);
+      let errorMessage = "Erreur lors de la mise à jour du produit";
+
+      if (error.response && error.response.data) {
+        errorMessage = Object.values(error.response.data.errors)
+          .flat()
+          .join("\n");
+      }
+
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -629,7 +697,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Modifier Produit</h2>
@@ -642,6 +710,60 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image principale */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image principale
+              </label>
+              <div className="flex items-center relative">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {previewImage ? (
+                      <img
+                        src={previewImage}
+                        alt="Preview"
+                        className="h-24 w-24 object-cover rounded-md"
+                      />
+                    ) : (
+                      <>
+                        <FaUpload className="w-8 h-8 mb-2 text-gray-500" />
+                        <p className="text-sm text-gray-500">
+                          <span className="font-semibold">
+                            Cliquez pour uploader
+                          </span>{" "}
+                          ou glissez-déposez
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF (max. 2MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    id="image_principale"
+                    name="image_principale"
+                    type="file"
+                    className="hidden"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                  />
+                </label>
+                {previewImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewImage(null);
+                      setImageFile(null);
+                    }}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 -mt-2 -mr-2"
+                    title="Supprimer l'image"
+                  >
+                    <FaTimes className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Nom */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -653,12 +775,15 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 value={formData.nom}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.nom ? 'border-red-500' : 'border-gray-300'
+                  errors.nom ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Ex: Ananas Victoria Bio"
               />
-              {errors.nom && <p className="text-red-500 text-sm mt-1">{errors.nom}</p>}
+              {errors.nom && (
+                <p className="text-red-500 text-sm mt-1">{errors.nom}</p>
+              )}
             </div>
+
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -670,12 +795,17 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 onChange={handleInputChange}
                 rows="3"
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.description ? 'border-red-500' : 'border-gray-300'
+                  errors.description ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Décrivez votre produit..."
               />
-              {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+              {errors.description && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.description}
+                </p>
+              )}
             </div>
+
             {/* Prix */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -687,14 +817,17 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 value={formData.prix}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.prix ? 'border-red-500' : 'border-gray-300'
+                  errors.prix ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="1500"
                 min="0"
                 step="0.01"
               />
-              {errors.prix && <p className="text-red-500 text-sm mt-1">{errors.prix}</p>}
+              {errors.prix && (
+                <p className="text-red-500 text-sm mt-1">{errors.prix}</p>
+              )}
             </div>
+
             {/* Prix Promo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -702,8 +835,8 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
               </label>
               <input
                 type="number"
-                name="prixPromo"
-                value={formData.prixPromo}
+                name="prix_promo"
+                value={formData.prix_promo}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="1200"
@@ -711,6 +844,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 step="0.01"
               />
             </div>
+
             {/* Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -722,13 +856,16 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 value={formData.stock}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.stock ? 'border-red-500' : 'border-gray-300'
+                  errors.stock ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="25"
                 min="0"
               />
-              {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+              {errors.stock && (
+                <p className="text-red-500 text-sm mt-1">{errors.stock}</p>
+              )}
             </div>
+
             {/* Stock Alerte */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -736,17 +873,22 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
               </label>
               <input
                 type="number"
-                name="stockAlerte"
-                value={formData.stockAlerte}
+                name="stock_alerte"
+                value={formData.stock_alerte}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.stockAlerte ? 'border-red-500' : 'border-gray-300'
+                  errors.stock_alerte ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="10"
                 min="0"
               />
-              {errors.stockAlerte && <p className="text-red-500 text-sm mt-1">{errors.stockAlerte}</p>}
+              {errors.stock_alerte && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.stock_alerte}
+                </p>
+              )}
             </div>
+
             {/* Catégorie */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -757,16 +899,21 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 value={formData.categorie}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.categorie ? 'border-red-500' : 'border-gray-300'
+                  errors.categorie ? "border-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Sélectionner une catégorie</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
-              {errors.categorie && <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>}
+              {errors.categorie && (
+                <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>
+              )}
             </div>
+
             {/* Sous-catégorie */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -774,13 +921,14 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
               </label>
               <input
                 type="text"
-                name="sousCategorie"
-                value={formData.sousCategorie}
+                name="sous_categorie"
+                value={formData.sous_categorie}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="Ex: Fruits tropicaux"
               />
             </div>
+
             {/* Poids */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -795,6 +943,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 placeholder="Ex: 1.5kg, 500ml"
               />
             </div>
+
             {/* Origine */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -809,6 +958,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 placeholder="Ex: Littoral, Cameroun"
               />
             </div>
+
             {/* Statut */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -825,13 +975,14 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 <option value="brouillon">Brouillon</option>
               </select>
             </div>
+
             {/* Certifications */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Certifications
               </label>
               <div className="flex flex-wrap gap-2">
-                {certificationOptions.map(cert => (
+                {certificationOptions.map((cert) => (
                   <label key={cert} className="flex items-center">
                     <input
                       type="checkbox"
@@ -844,6 +995,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                 ))}
               </div>
             </div>
+
             {/* Options */}
             <div className="md:col-span-2">
               <div className="flex flex-wrap gap-4">
@@ -855,21 +1007,26 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
                     onChange={handleInputChange}
                     className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Visible sur le site</span>
+                  <span className="ml-2 text-sm text-gray-700">
+                    Visible sur le site
+                  </span>
                 </label>
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    name="enPromotion"
-                    checked={formData.enPromotion}
+                    name="en_promotion"
+                    checked={formData.en_promotion}
                     onChange={handleInputChange}
                     className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">En promotion</span>
+                  <span className="ml-2 text-sm text-gray-700">
+                    En promotion
+                  </span>
                 </label>
               </div>
             </div>
           </div>
+
           {/* Boutons */}
           <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
             <button
@@ -889,7 +1046,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
               ) : (
                 <FaSave className="mr-2" />
               )}
-              {isSubmitting ? 'Mise à jour...' : 'Mettre à jour'}
+              {isSubmitting ? "Mise à jour..." : "Mettre à jour"}
             </button>
           </div>
         </form>
@@ -913,22 +1070,23 @@ const Produits = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [isAuthenticated] = useState(true); // Simulation d'authentification
+  const [isAuthenticated] = useState(true);
 
   // Chargement des produits
   useEffect(() => {
     const fetchProduits = async () => {
       try {
         setLoading(true);
-        const data = await API.getProduits();
-        setProduits(data);
-        setFilteredProduits(data);
+        const response = await Api.get("/api/produits");
+        setProduits(response.data.data);
+        setFilteredProduits(response.data.data);
       } catch (error) {
         console.error("Erreur lors du chargement des produits:", error);
       } finally {
         setLoading(false);
       }
     };
+
     if (isAuthenticated) {
       fetchProduits();
     }
@@ -940,21 +1098,28 @@ const Produits = () => {
 
     // Filtrage par recherche
     if (searchTerm) {
-      filtered = filtered.filter(produit =>
-        produit.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        produit.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        produit.categorie.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (produit) =>
+          produit.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          produit.description
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          produit.categorie.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtrage par catégorie
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(produit => produit.categorie === selectedCategory);
+      filtered = filtered.filter(
+        (produit) => produit.categorie === selectedCategory
+      );
     }
 
     // Filtrage par statut
     if (selectedStatus !== "all") {
-      filtered = filtered.filter(produit => produit.statut === selectedStatus);
+      filtered = filtered.filter(
+        (produit) => produit.statut === selectedStatus
+      );
     }
 
     // Tri
@@ -975,7 +1140,7 @@ const Produits = () => {
           compareValue = a.ventes - b.ventes;
           break;
         case "date":
-          compareValue = new Date(a.dateCreation) - new Date(b.dateCreation);
+          compareValue = new Date(a.created_at) - new Date(b.created_at);
           break;
         default:
           compareValue = 0;
@@ -984,19 +1149,26 @@ const Produits = () => {
       return sortOrder === "asc" ? compareValue : -compareValue;
     });
     setFilteredProduits(filtered);
-  }, [produits, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
+  }, [
+    produits,
+    searchTerm,
+    selectedCategory,
+    selectedStatus,
+    sortBy,
+    sortOrder,
+  ]);
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XAF',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "XAF",
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
   const formatDate = (dateStr) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateStr).toLocaleDateString('fr-FR', options);
+    const options = { year: "numeric", month: "short", day: "numeric" };
+    return new Date(dateStr).toLocaleDateString("fr-FR", options);
   };
 
   const getStatutClass = (statut) => {
@@ -1022,71 +1194,90 @@ const Produits = () => {
 
   const handleCreateProduit = async (produitData) => {
     try {
-      const newProduit = await API.createProduit(produitData);
-      setProduits(prev => [newProduit, ...prev]);
+      // Envoie les données du nouveau produit à l'API
+      const response = await Api.post("/api/produits", produitData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      // Ajoute le nouveau produit à la liste
+      const newProduit = response.data.data;
+      setProduits((prev) => [newProduit, ...prev]);
       alert("Produit créé avec succès !");
     } catch (error) {
       console.error("Erreur lors de la création:", error);
-      alert("Erreur lors de la création du produit");
+      let errorMessage = "Erreur lors de la création du produit";
+
+      if (error.response) {
+        // Si c'est une erreur de validation Laravel
+        if (error.response.data.errors) {
+          errorMessage = Object.entries(error.response.data.errors)
+            .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+            .join("\n");
+        }
+        // Si c'est une autre erreur du serveur
+        else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      alert(errorMessage);
+      throw error; // Pour que le modal puisse gérer l'erreur
     }
   };
 
   const handleUpdateProduit = async (id, produitData) => {
     try {
-      const updatedProduit = await API.updateProduit(id, produitData);
-      setProduits(prev => prev.map(p => p.id === id ? updatedProduit : p));
+      const response = await Api.post(`/api/produits/${id}`, produitData);
+      const updatedProduit = response.data.data;
+      setProduits((prev) =>
+        prev.map((p) => (p.id === id ? updatedProduit : p))
+      );
       alert("Produit mis à jour avec succès !");
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
-      alert("Erreur lors de la mise à jour du produit");
-    }
-  };
+      let errorMessage = "Erreur lors de la mise à jour du produit";
 
-  const handleSelectProduit = (produitId) => {
-    setSelectedProduits(prev => {
-      const newSelection = prev.includes(produitId)
-        ? prev.filter(id => id !== produitId)
-        : [...prev, produitId];
+      if (error.response && error.response.data) {
+        errorMessage = Object.values(error.response.data.errors)
+          .flat()
+          .join("\n");
+      }
 
-      setShowBulkActions(newSelection.length > 0);
-      return newSelection;
-    });
-  };
-
-  const handleSelectAll = () => {
-    const allIds = filteredProduits.map(p => p.id);
-    const allSelected = selectedProduits.length === allIds.length;
-
-    setSelectedProduits(allSelected ? [] : allIds);
-    setShowBulkActions(!allSelected && allIds.length > 0);
-  };
-
-  const handleToggleVisibility = async (produitId) => {
-    try {
-      const produit = produits.find(p => p.id === produitId);
-      await API.updateProduit(produitId, { visible: !produit.visible });
-      setProduits(prev => prev.map(produit =>
-        produit.id === produitId
-          ? { ...produit, visible: !produit.visible }
-          : produit
-      ));
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
-      alert("Erreur lors de la mise à jour de la visibilité.");
+      alert(errorMessage);
+      throw error; // Pour que le modal puisse gérer l'erreur
     }
   };
 
   const handleDeleteProduit = async (produitId) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
       try {
-        await API.deleteProduit(produitId);
-        setProduits(prev => prev.filter(produit => produit.id !== produitId));
-        setSelectedProduits(prev => prev.filter(id => id !== produitId));
+        await Api.delete(`/api/produits/${produitId}`);
+        setProduits((prev) =>
+          prev.filter((produit) => produit.id !== produitId)
+        );
+        setSelectedProduits((prev) => prev.filter((id) => id !== produitId));
         alert("Produit supprimé avec succès !");
       } catch (error) {
         console.error("Erreur lors de la suppression:", error);
         alert("Erreur lors de la suppression du produit.");
       }
+    }
+  };
+
+  const handleToggleVisibility = async (produitId) => {
+    try {
+      const produit = produits.find((p) => p.id === produitId);
+      const response = await Api.post(`/api/produits/${produitId}`, {
+        visible: !produit.visible,
+      });
+      const updatedProduit = response.data.data;
+      setProduits((prev) =>
+        prev.map((p) => (p.id === produitId ? updatedProduit : p))
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
+      alert("Erreur lors de la mise à jour de la visibilité.");
     }
   };
 
@@ -1115,16 +1306,25 @@ const Produits = () => {
 
       if (window.confirm(confirmationMessage)) {
         if (action === "delete") {
-          await Promise.all(selectedProduits.map(id => API.deleteProduit(id)));
-          setProduits(prev => prev.filter(produit => !selectedProduits.includes(produit.id)));
+          await Promise.all(
+            selectedProduits.map((id) => Api.delete(`/api/produits/${id}`))
+          );
+          setProduits((prev) =>
+            prev.filter((produit) => !selectedProduits.includes(produit.id))
+          );
           alert(`${selectedProduits.length} produits supprimés avec succès.`);
         } else {
-          await API.bulkUpdate(selectedProduits, updates);
-          setProduits(prev => prev.map(produit =>
-            selectedProduits.includes(produit.id)
-              ? { ...produit, ...updates }
-              : produit
-          ));
+          await Api.post("/api/produits/bulk-update", {
+            ids: selectedProduits,
+            updates,
+          });
+          setProduits((prev) =>
+            prev.map((produit) =>
+              selectedProduits.includes(produit.id)
+                ? { ...produit, ...updates }
+                : produit
+            )
+          );
           alert(`${selectedProduits.length} produits mis à jour avec succès.`);
         }
         setSelectedProduits([]);
@@ -1136,21 +1336,43 @@ const Produits = () => {
     }
   };
 
+  const handleSelectProduit = (produitId) => {
+    setSelectedProduits((prev) => {
+      const newSelection = prev.includes(produitId)
+        ? prev.filter((id) => id !== produitId)
+        : [...prev, produitId];
+
+      setShowBulkActions(newSelection.length > 0);
+      return newSelection;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allIds = filteredProduits.map((p) => p.id);
+    const allSelected = selectedProduits.length === allIds.length;
+
+    setSelectedProduits(allSelected ? [] : allIds);
+    setShowBulkActions(!allSelected && allIds.length > 0);
+  };
+
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setShowEditModal(true);
   };
 
-
-  const categoriesList = [...new Set(produits.map(p => p.categorie))];
-  const statutsList = [...new Set(produits.map(p => p.statut))];
+  const categoriesList = [...new Set(produits.map((p) => p.categorie))];
+  const statutsList = [...new Set(produits.map((p) => p.statut))];
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen pt-24 pb-12 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Accès non autorisé</h1>
-          <p className="text-gray-600 mb-6">Vous devez être connecté pour gérer vos produits</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Accès non autorisé
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Vous devez être connecté pour gérer vos produits
+          </p>
         </div>
       </div>
     );
@@ -1170,16 +1392,22 @@ const Produits = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-gray-50">
+    <div className="min-h-screen pt-24 pb-12 bg-gray-50 relative">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Gestion des Produits</h1>
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">
+          Gestion des Produits
+        </h1>
 
         {/* Barre de recherche et filtres */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
             <div className="md:col-span-2 lg:col-span-1">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                <FaSearch className="inline-block mr-2 text-gray-500" /> Recherche
+              <label
+                htmlFor="search"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                <FaSearch className="inline-block mr-2 text-gray-500" />{" "}
+                Recherche
               </label>
               <input
                 type="text"
@@ -1192,8 +1420,12 @@ const Produits = () => {
             </div>
 
             <div>
-              <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-2">
-                <FaFilter className="inline-block mr-2 text-gray-500" /> Catégorie
+              <label
+                htmlFor="categoryFilter"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                <FaFilter className="inline-block mr-2 text-gray-500" />{" "}
+                Catégorie
               </label>
               <select
                 id="categoryFilter"
@@ -1202,14 +1434,19 @@ const Produits = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">Toutes les catégories</option>
-                {categoriesList.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {categoriesList.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="statusFilter"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 <FaFilter className="inline-block mr-2 text-gray-500" /> Statut
               </label>
               <select
@@ -1228,8 +1465,12 @@ const Produits = () => {
 
             <div className="flex items-center gap-2">
               <div>
-                <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-2">
-                  <FaSortAmountUp className="inline-block mr-2 text-gray-500" /> Trier par
+                <label
+                  htmlFor="sortBy"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  <FaSortAmountUp className="inline-block mr-2 text-gray-500" />{" "}
+                  Trier par
                 </label>
                 <select
                   id="sortBy"
@@ -1245,11 +1486,17 @@ const Produits = () => {
                 </select>
               </div>
               <button
-                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                onClick={() =>
+                  setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                }
                 className="p-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200 mt-auto"
                 title="Changer l'ordre de tri"
               >
-                {sortOrder === "asc" ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                {sortOrder === "asc" ? (
+                  <FaSortAmountUp />
+                ) : (
+                  <FaSortAmountDown />
+                )}
               </button>
             </div>
           </div>
@@ -1267,7 +1514,9 @@ const Produits = () => {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
                 defaultValue=""
               >
-                <option value="" disabled>Actions groupées</option>
+                <option value="" disabled>
+                  Actions groupées
+                </option>
                 <option value="activate">Activer</option>
                 <option value="deactivate">Désactiver</option>
                 <option value="delete">Supprimer</option>
@@ -1288,36 +1537,66 @@ const Produits = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     <input
                       type="checkbox"
                       className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                      checked={selectedProduits.length === filteredProduits.length && filteredProduits.length > 0}
+                      checked={
+                        selectedProduits.length === filteredProduits.length &&
+                        filteredProduits.length > 0
+                      }
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Produit
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Catégorie
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Prix
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Stock
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Statut
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Visibilité
                   </th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Ventes
                   </th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -1325,14 +1604,26 @@ const Produits = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredProduits.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                    <td
+                      colSpan="9"
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
+                    >
                       <FaBoxOpen className="inline-block text-4xl text-gray-400 mb-2" />
-                      <p>Aucun produit trouvé. Essayez d'ajuster vos filtres.</p>
+                      <p>
+                        Aucun produit trouvé. Essayez d'ajuster vos filtres.
+                      </p>
                     </td>
                   </tr>
                 ) : (
                   filteredProduits.map((produit) => (
-                    <tr key={produit.id} className={selectedProduits.includes(produit.id) ? "bg-green-50" : ""}>
+                    <tr
+                      key={produit.id}
+                      className={
+                        selectedProduits.includes(produit.id)
+                          ? "bg-green-50"
+                          : ""
+                      }
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
@@ -1344,11 +1635,23 @@ const Produits = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <img className="h-10 w-10 rounded-full object-cover" src={produit.images[0]} alt={produit.nom} />
+                            <img
+                              className="h-10 w-10 rounded-full object-cover"
+                              src={
+                                produit.image_principale ||
+                                produit.images?.[0] ||
+                                "https://via.placeholder.com/300"
+                              }
+                              alt={produit.nom}
+                            />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{produit.nom}</div>
-                            <div className="text-sm text-gray-500 line-clamp-1">{produit.description}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {produit.nom}
+                            </div>
+                            <div className="text-sm text-gray-500 line-clamp-1">
+                              {produit.description}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1356,25 +1659,45 @@ const Produits = () => {
                         {produit.categorie}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {produit.enPromotion && produit.prixPromo ? (
+                        {produit.en_promotion && produit.prix_promo ? (
                           <div className="flex flex-col">
-                            <span className="text-red-500 font-semibold">{formatPrice(produit.prixPromo)}</span>
-                            <span className="text-gray-400 line-through text-xs">{formatPrice(produit.prix)}</span>
+                            <span className="text-red-500 font-semibold">
+                              {formatPrice(produit.prix_promo)}
+                            </span>
+                            <span className="text-gray-400 line-through text-xs">
+                              {formatPrice(produit.prix)}
+                            </span>
                           </div>
                         ) : (
                           formatPrice(produit.prix)
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={getStockClass(produit.stock, produit.stockAlerte)}>
-                          {produit.stock} {produit.stock === 0 && <FaExclamationTriangle className="inline ml-1" />}
+                        <span
+                          className={getStockClass(
+                            produit.stock,
+                            produit.stock_alerte
+                          )}
+                        >
+                          {produit.stock}{" "}
+                          {produit.stock === 0 && (
+                            <FaExclamationTriangle className="inline ml-1" />
+                          )}
                         </span>
-                        {produit.stock <= produit.stockAlerte && produit.stock > 0 && (
-                          <span className="ml-2 text-xs text-orange-500"> (Alerte)</span>
-                        )}
+                        {produit.stock <= produit.stock_alerte &&
+                          produit.stock > 0 && (
+                            <span className="ml-2 text-xs text-orange-500">
+                              {" "}
+                              (Alerte)
+                            </span>
+                          )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatutClass(produit.statut)}`}>
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatutClass(
+                            produit.statut
+                          )}`}
+                        >
                           {produit.statut}
                         </span>
                       </td>
@@ -1382,11 +1705,21 @@ const Produits = () => {
                         <button
                           onClick={() => handleToggleVisibility(produit.id)}
                           className={`p-2 rounded-full transition-colors duration-200 ${
-                            produit.visible ? 'text-green-600 hover:bg-green-100' : 'text-gray-400 hover:bg-gray-100'
+                            produit.visible
+                              ? "text-green-600 hover:bg-green-100"
+                              : "text-gray-400 hover:bg-gray-100"
                           }`}
-                          title={produit.visible ? "Rendre invisible" : "Rendre visible"}
+                          title={
+                            produit.visible
+                              ? "Rendre invisible"
+                              : "Rendre visible"
+                          }
                         >
-                          {produit.visible ? <FaToggleOn className="text-xl" /> : <FaToggleOff className="text-xl" />}
+                          {produit.visible ? (
+                            <FaToggleOn className="text-xl" />
+                          ) : (
+                            <FaToggleOff className="text-xl" />
+                          )}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
@@ -1426,17 +1759,22 @@ const Produits = () => {
       </div>
 
       {/* Modals */}
-      <CreateProductModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateProduit}
-      />
-      <EditProductModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        product={editingProduct}
-        onSubmit={handleUpdateProduit}
-      />
+      {showCreateModal && (
+        <CreateProductModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateProduit}
+        />
+      )}
+
+      {showEditModal && (
+        <EditProductModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          product={editingProduct}
+          onSubmit={handleUpdateProduit}
+        />
+      )}
     </div>
   );
 };

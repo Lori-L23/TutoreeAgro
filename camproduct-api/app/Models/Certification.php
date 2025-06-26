@@ -9,7 +9,7 @@ class Certification extends Model
    protected $fillable =[
     'produit_id',
     'nom_certification',
-    'description',
+//     'description',
     // 'logo'
    ];
     public function produit()

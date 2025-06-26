@@ -9,5 +9,10 @@ export default defineConfig({
             refresh: true,
         }),
         tailwindcss(),
+        
     ],
+    base: '/',
+    build: {
+    outDir: 'dist', // Doit correspondre à votre dossier de build
+  }
 });

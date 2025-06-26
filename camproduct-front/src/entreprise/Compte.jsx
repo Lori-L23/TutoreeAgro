@@ -69,7 +69,7 @@ const CompteEntreprise = () => {
   const fetchProfileData = async () => {
     try {
       setLoading(true);
-      const response = await Api.get("api/entreprise/profil");
+      const response = await Api.get("/api/entreprise/profil");
 
       if (response.data.success) {
         setProfileData({
@@ -93,7 +93,7 @@ const CompteEntreprise = () => {
   // Récupération des statistiques
   const fetchStats = async () => {
     try {
-      const response = await Api.get("api/entreprise/statistiques");
+      const response = await Api.get("/api/entreprise/statistiques");
 
       if (response.data.success) {
         setStats(response.data.data);
@@ -107,7 +107,7 @@ const CompteEntreprise = () => {
   const fetchRecentOrders = async () => {
     try {
       setOrdersLoading(true);
-      const response = await Api.get("api/entreprise/commandes?limit=10");
+      const response = await Api.get("/api/entreprise/commandes?limit=10");
 
       if (response.data.success) {
         setRecentOrders(response.data.data);
@@ -126,7 +126,7 @@ const CompteEntreprise = () => {
       setError(null);
       
       const response = await Api.put(
-        "api/entreprise/profil",
+        "/api/entreprise/profil",
         profileData
       );
       
@@ -155,7 +155,7 @@ const CompteEntreprise = () => {
 
     try {
       const response = await Api.post(
-        "api/entreprise/upload-logo",
+        "/api/entreprise/upload-logo",
         formData,
         {
           headers: {
@@ -181,7 +181,7 @@ const CompteEntreprise = () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const response = await Api.put(
-        `api/commandes/${orderId}/statut`,
+        `/api/commandes/${orderId}/statut`,
         { statut: newStatus }
       );
 
@@ -205,7 +205,7 @@ const CompteEntreprise = () => {
     }
 
     try {
-      const response = await Api.delete(`api/commandes/${orderId}`);
+      const response = await Api.delete(`/api/commandes/${orderId}`);
 
       if (response.data.success) {
         setRecentOrders((prev) => prev.filter((order) => order.id !== orderId));

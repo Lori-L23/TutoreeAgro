@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('produit_id')->constrained('produits')->onDelete('cascade');
             $table->string('nom_certification')->nullable();
-            $table->string('description')->nullable();
-            // $table->string('logo')->nullable();
+
             $table->timestamps();
         });
     }

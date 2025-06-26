@@ -52,7 +52,7 @@ const Footer = () => {
               les savoir-faire du terroir.
             </p>
             <a 
-              href="/a-propos" 
+              href="/apropos" 
               className="inline-flex items-center text-sm font-medium text-yellow-200 hover:text-white"
             >
               En savoir plus <FaArrowRight className="ml-2" />

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use Illuminate\Http\Request;
-
 use App\Mail\ContactMessageMail;
 use App\Mail\ContactConfirmationMail;
 use Illuminate\Support\Facades\Mail;
@@ -13,8 +12,11 @@ use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
 {
- /**
+    /**
      * Envoyer un message de contact
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
@@ -25,7 +27,7 @@ class ContactController extends Controller
                 'email' => 'required|email|max:255',
                 'subject' => 'required|string|max:255',
                 'message' => 'required|string|max:5000',
-                'type' => 'required|in:question,enterprise,technical,partnership,other'
+                'type' => 'required|in:question,suggestion,reclamation,autres'
             ], [
                 'name.required' => 'Le nom est obligatoire',
                 'email.required' => 'L\'email est obligatoire',
@@ -45,11 +47,11 @@ class ContactController extends Controller
             }
 
             // Créer le message de contact
-            $contactMessage = Contact::create($request->validated());
+            $contactMessage = Contact::create($validator->validated());
 
             // Envoyer l'email de notification à l'admin
             try {
-                Mail::to(config('mail.admin_email', 'admin@madeincameroun.cm'))
+                Mail::to(config('mail.admin_email'))
                     ->send(new ContactMessageMail($contactMessage));
             } catch (\Exception $e) {
                 Log::error('Erreur envoi email admin: ' . $e->getMessage());
@@ -84,9 +86,15 @@ class ContactController extends Controller
 
     /**
      * Obtenir tous les messages (pour l'admin)
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
+        // Vérification de l'authentification (décommentez si nécessaire)
+        // $this->authorize('viewAny', Contact::class);
+
         $query = Contact::latest();
 
         // Filtrer par statut
@@ -109,12 +117,15 @@ class ContactController extends Controller
 
     /**
      * Voir un message spécifique
+     * 
+     * @param Contact $contactMessage
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show(Contact $contactMessage)
     {
         // Marquer comme lu si ce n'est pas déjà fait
         if ($contactMessage->status === 'new') {
-            $contactMessage->markAsRead();
+            $contactMessage->update(['status' => 'read']);
         }
 
         return response()->json([
@@ -125,6 +136,10 @@ class ContactController extends Controller
 
     /**
      * Mettre à jour le statut d'un message
+     * 
+     * @param Request $request
+     * @param Contact $contactMessage
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, Contact $contactMessage)
     {

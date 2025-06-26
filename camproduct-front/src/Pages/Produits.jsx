@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Filter, Star, MapPin, ArrowDownUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ananas from '../assets/ananas.avif';
+import ananas from '../assets/ananas.jpg';
 import piment from '../assets/piment.avif';
 import miel from '../assets/miel1.avif';
 import cacao from '../assets/cacao2.avif';

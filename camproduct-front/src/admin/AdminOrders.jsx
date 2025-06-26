@@ -7,8 +7,8 @@ import {
   FaTimesCircle,
   FaTruck
 } from 'react-icons/fa';
-import OrderTable from '../components/admin/OrderTable';
-import OrderDetailsModal from '../components/admin/OrderDetailsModal';
+import OrderTable from '../components/OrderTable';
+import OrderDetailsModal from '../components/OrderDetailsModal';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);

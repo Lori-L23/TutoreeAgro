@@ -22,11 +22,11 @@ const AdminUserTable = ({ users, loading, onEdit, onDelete }) => {
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-gray-100">
         <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dernière connexion</th>
+          {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th> */}
+          {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dernière connexion</th> */}
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inscription</th>
           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
@@ -34,14 +34,11 @@ const AdminUserTable = ({ users, loading, onEdit, onDelete }) => {
       <tbody className="bg-white divide-y divide-gray-200">
         {users.map(user => (
           <tr key={user.id}>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.name}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.id}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{user.role}</td>
-            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${user.status === 'actif' ? 'text-green-600' : 'text-red-600'}`}>
-              {user.status}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.registeredAt}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{user.user_type}</td>
+            
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.created_at}</td>
             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end space-x-2">
               <button
                 onClick={() => onEdit(user)}

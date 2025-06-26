@@ -15,26 +15,28 @@ import {
 import Api from "../Services/Api";
 import back from "../assets/back1.avif";
 
-// Service API
+// Service API corrigé
 const contactAPI = {
   async sendMessage(data) {
-    const response = await Api.post(`/contact`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
+    try {
+      const response = await Api.post('/api/contact', data);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw {
+          status: error.response.status,
+          message: error.response.data?.message || "Une erreur est survenue",
+          errors: error.response.data?.errors || {},
+        };
+      }
       throw {
-        status: response.status,
-        message: result.message || "Une erreur est survenue",
-        errors: result.errors || {},
+        message: error.message || "Erreur de connexion au serveur",
       };
     }
-
-    return result;
   },
 };
 
-// Composant réutilisable pour les cartes d'information
+// Composants réutilisables (inchangés)
 const ContactCard = ({ icon: Icon, title, children }) => (
   <div className="flex items-start p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
     <div className="p-3 bg-green-100 rounded-full mr-4">
@@ -47,7 +49,6 @@ const ContactCard = ({ icon: Icon, title, children }) => (
   </div>
 );
 
-// Composant pour les questions fréquentes
 const FAQItem = ({ question, answer }) => (
   <div className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:pb-0 last:mb-0">
     <h3 className="font-medium text-green-700 mb-1">{question}</h3>
@@ -55,7 +56,6 @@ const FAQItem = ({ question, answer }) => (
   </div>
 );
 
-// Composant pour les messages d'alerte
 const Alert = ({ type, title, message, onClose }) => {
   const styles = {
     success: {
@@ -76,9 +76,7 @@ const Alert = ({ type, title, message, onClose }) => {
   const Icon = style.icon;
 
   return (
-    <div
-      className={`${style.bg} ${style.border} ${style.text} px-4 py-3 rounded-lg mb-6 flex items-start`}
-    >
+    <div className={`${style.bg} ${style.border} ${style.text} px-4 py-3 rounded-lg mb-6 flex items-start`}>
       <Icon className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
       <div className="flex-grow">
         <p className="font-medium">{title}</p>
@@ -93,6 +91,7 @@ const Alert = ({ type, title, message, onClose }) => {
   );
 };
 
+// Composant principal Contact
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: "",
@@ -111,19 +110,12 @@ export default function Contact() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Effacer les erreurs de validation pour ce champ
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
     if (formState.validationErrors[name]) {
-      setFormState((prev) => ({
+      setFormState(prev => ({
         ...prev,
-        validationErrors: {
-          ...prev.validationErrors,
-          [name]: undefined,
-        },
+        validationErrors: { ...prev.validationErrors, [name]: undefined },
       }));
     }
   };
@@ -146,31 +138,21 @@ export default function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    setFormState((prev) => ({
-      ...prev,
-      isSubmitting: true,
-      error: null,
-      validationErrors: {},
-    }));
+    setFormState(prev => ({ ...prev, isSubmitting: true, error: null, validationErrors: {} }));
 
     try {
-      const response = await contactAPI.sendMessage(formData);
-
-      setFormState((prev) => ({
+      await contactAPI.sendMessage(formData);
+      
+      setFormState(prev => ({
         ...prev,
         isSubmitting: false,
         submitted: true,
       }));
 
-      // Réinitialiser le formulaire après 5 secondes
-      setTimeout(() => {
-        resetForm();
-      }, 5000);
+      setTimeout(resetForm, 5000);
     } catch (error) {
-      console.error("Erreur lors de l'envoi:", error);
-
-      setFormState((prev) => ({
+      console.error("Erreur API:", error);
+      setFormState(prev => ({
         ...prev,
         isSubmitting: false,
         error: error.message,
@@ -180,29 +162,18 @@ export default function Contact() {
   };
 
   const getFieldError = (fieldName) => {
-    return (
-      formState.validationErrors[fieldName] &&
-      formState.validationErrors[fieldName][0]
-    );
+    return formState.validationErrors[fieldName]?.[0];
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div className="relative bg-green-800 text-white h-96 overflow-hidden">
-        {/* <div className="container mx-auto px-4 mt-20 max-w-6xl"> */}
-        <img
-          src={back}
-          alt="contactez nous"
-          className="w-full h-full object-cover opacity-60"
-        />
+        <img src={back} alt="contactez nous" className="w-full h-full object-cover opacity-60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Contactez-nous
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Contactez-nous</h1>
           <p className="text-lg md:text-xl max-w-2xl">
-            Une question ? Une suggestion ? Nous sommes à votre écoute pour vous
-            aider dans votre découverte des produits Made in Cameroun.
+            Une question ? Une suggestion ? Nous sommes à votre écoute.
           </p>
         </div>
       </div>
@@ -213,26 +184,20 @@ export default function Contact() {
           {/* Colonne de gauche - Informations */}
           <div className="md:col-span-1 space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-6 text-gray-800">
-                Nos informations
-              </h2>
-
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Nos informations</h2>
               <div className="space-y-4">
                 <ContactCard icon={MapPin} title="Adresse">
                   <p>123 Avenue de l'Indépendance</p>
                   <p>Yaoundé, Cameroun</p>
                 </ContactCard>
-
                 <ContactCard icon={Phone} title="Téléphone">
                   <p>+237 6XX XX XX XX</p>
                   <p>+237 2XX XX XX XX</p>
                 </ContactCard>
-
                 <ContactCard icon={Mail} title="Email">
                   <p>contact@madeincameroun.cm</p>
                   <p>info@madeincameroun.cm</p>
                 </ContactCard>
-
                 <ContactCard icon={Clock} title="Horaires">
                   <p>Lundi - Vendredi: 8h30 - 17h30</p>
                   <p>Samedi: 9h - 13h</p>
@@ -245,38 +210,12 @@ export default function Contact() {
               <h3 className="font-medium text-gray-800 mb-4">Suivez-nous</h3>
               <div className="flex space-x-3">
                 {[
-                  {
-                    icon: Facebook,
-                    color: "bg-blue-100",
-                    text: "text-blue-600",
-                    url: "#",
-                  },
-                  {
-                    icon: Twitter,
-                    color: "bg-sky-100",
-                    text: "text-sky-600",
-                    url: "#",
-                  },
-                  {
-                    icon: Instagram,
-                    color: "bg-pink-100",
-                    text: "text-pink-600",
-                    url: "#",
-                  },
-                  {
-                    icon: Linkedin,
-                    color: "bg-blue-100",
-                    text: "text-blue-700",
-                    url: "#",
-                  },
+                  { icon: Facebook, color: "bg-blue-100", text: "text-blue-600" },
+                  { icon: Twitter, color: "bg-sky-100", text: "text-sky-600" },
+                  { icon: Instagram, color: "bg-pink-100", text: "text-pink-600" },
+                  { icon: Linkedin, color: "bg-blue-100", text: "text-blue-700" },
                 ].map((social, index) => (
-                  <a
-                    key={index}
-                    href={social.url}
-                    className={`h-10 w-10 rounded-full ${social.color} flex items-center justify-center transition-colors hover:scale-110`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a key={index} href="#" className={`h-10 w-10 rounded-full ${social.color} flex items-center justify-center transition-colors hover:scale-110`}>
                     <social.icon className={`h-5 w-5 ${social.text}`} />
                   </a>
                 ))}
@@ -285,21 +224,19 @@ export default function Contact() {
 
             {/* FAQ Rapide */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-gray-800">
-                Questions fréquentes
-              </h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-800">Questions fréquentes</h2>
               <div className="space-y-4">
                 <FAQItem
                   question="Comment inscrire mon entreprise ?"
-                  answer="Utilisez le formulaire d'inscription dans l'espace entreprise et suivez les étapes."
+                  answer="Utilisez le formulaire d'inscription dans l'espace entreprise."
                 />
                 <FAQItem
                   question="Est-ce que l'inscription est gratuite ?"
-                  answer="Oui, l'inscription de base est entièrement gratuite pour toutes les entreprises camerounaises."
+                  answer="Oui, l'inscription de base est entièrement gratuite."
                 />
                 <FAQItem
                   question="Comment contacter une entreprise ?"
-                  answer="Utilisez le formulaire de contact sur la page de l'entreprise concernée."
+                  answer="Utilisez le formulaire de contact sur la page de l'entreprise."
                 />
               </div>
             </div>
@@ -312,9 +249,7 @@ export default function Contact() {
                 <div className="p-3 bg-green-100 rounded-full mr-4">
                   <MessageSquare className="h-5 w-5 text-green-700" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Envoyez-nous un message
-                </h2>
+                <h2 className="text-xl font-bold text-gray-800">Envoyez-nous un message</h2>
               </div>
 
               {/* Messages d'alerte */}
@@ -331,19 +266,14 @@ export default function Contact() {
                   type="error"
                   title="Erreur lors de l'envoi"
                   message={formState.error}
-                  onClose={() =>
-                    setFormState((prev) => ({ ...prev, error: null }))
-                  }
+                  onClose={() => setFormState(prev => ({ ...prev, error: null }))}
                 />
               )}
 
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                       Nom complet *
                     </label>
                     <input
@@ -353,24 +283,17 @@ export default function Contact() {
                       value={formData.name}
                       onChange={handleChange}
                       disabled={formState.isSubmitting}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                        getFieldError("name")
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                        getFieldError("name") ? "border-red-300 bg-red-50" : "border-gray-300"
                       }`}
                     />
                     {getFieldError("name") && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {getFieldError("name")}
-                      </p>
+                      <p className="text-sm text-red-600 mt-1">{getFieldError("name")}</p>
                     )}
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                       Email *
                     </label>
                     <input
@@ -380,25 +303,18 @@ export default function Contact() {
                       value={formData.email}
                       onChange={handleChange}
                       disabled={formState.isSubmitting}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                        getFieldError("email")
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                        getFieldError("email") ? "border-red-300 bg-red-50" : "border-gray-300"
                       }`}
                     />
                     {getFieldError("email") && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {getFieldError("email")}
-                      </p>
+                      <p className="text-sm text-red-600 mt-1">{getFieldError("email")}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="mb-6">
-                  <label
-                    htmlFor="subject"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
                     Sujet *
                   </label>
                   <input
@@ -408,24 +324,17 @@ export default function Contact() {
                     value={formData.subject}
                     onChange={handleChange}
                     disabled={formState.isSubmitting}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                      getFieldError("subject")
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-300"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      getFieldError("subject") ? "border-red-300 bg-red-50" : "border-gray-300"
                     }`}
                   />
                   {getFieldError("subject") && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {getFieldError("subject")}
-                    </p>
+                    <p className="text-sm text-red-600 mt-1">{getFieldError("subject")}</p>
                   )}
                 </div>
 
                 <div className="mb-6">
-                  <label
-                    htmlFor="message"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                     Message *
                   </label>
                   <textarea
@@ -435,24 +344,17 @@ export default function Contact() {
                     value={formData.message}
                     onChange={handleChange}
                     disabled={formState.isSubmitting}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                      getFieldError("message")
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-300"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      getFieldError("message") ? "border-red-300 bg-red-50" : "border-gray-300"
                     }`}
                   ></textarea>
                   {getFieldError("message") && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {getFieldError("message")}
-                    </p>
+                    <p className="text-sm text-red-600 mt-1">{getFieldError("message")}</p>
                   )}
                 </div>
 
                 <div className="mb-6">
-                  <label
-                    htmlFor="type"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
+                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
                     Type de message
                   </label>
                   <select
@@ -461,12 +363,12 @@ export default function Contact() {
                     value={formData.type}
                     onChange={handleChange}
                     disabled={formState.isSubmitting}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition"
                   >
                     <option value="question">Question</option>
                     <option value="suggestion">Suggestion</option>
-                    <option value="reclamation">Réclamation</option>
-                    <option value="autre">Autre</option>
+                    <option value="complaint">Réclamation</option>
+                    <option value="other">Autre</option>
                   </select>
                 </div>
 
@@ -475,9 +377,7 @@ export default function Contact() {
                   disabled={formState.isSubmitting}
                   className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-200 disabled:opacity-50"
                 >
-                  {formState.isSubmitting
-                    ? "Envoi en cours..."
-                    : "Envoyer le message"}
+                  {formState.isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
                 </button>
               </form>
             </div>

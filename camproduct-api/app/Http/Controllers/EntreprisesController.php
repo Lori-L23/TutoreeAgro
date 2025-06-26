@@ -16,7 +16,20 @@ class EntreprisesController extends Controller
      */
     public function index()
     {
-        //
+        $user = Auth::user();
+        $entreprise = $user->entreprise;
+
+        if (!$entreprise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entreprise non trouvée'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $entreprise
+        ]);
     }
 
     /**
@@ -40,7 +53,10 @@ class EntreprisesController extends Controller
      */
     public function show(Entreprises $entreprises)
     {
-        return response()->json($entreprises);
+        return response()->json([
+            'success' => true,
+            'data' => $entreprises
+        ]);
     }
 
     /**
@@ -56,7 +72,32 @@ class EntreprisesController extends Controller
      */
     public function update(Request $request, Entreprises $entreprises)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'nom_entreprise' => 'required|string|max:255',
+            'secteur' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'adresse' => 'required|string|max:255',
+            'telephone' => 'required|string|max:20',
+            'email' => 'required|email|max:255',
+            'site_web' => 'nullable|url|max:255',
+            'date_creation' => 'nullable|date',
+            'numero_rccm' => 'nullable|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $entreprises->update($validator->validated());
+
+        return response()->json([
+            'success' => true,
+            'data' => $entreprises,
+            'message' => 'Entreprise mise à jour avec succès'
+        ]);
     }
 
     /**
@@ -64,7 +105,13 @@ class EntreprisesController extends Controller
      */
     public function destroy(Entreprises $entreprises)
     {
-        //
+        // Supprimer l'entreprise
+        $entreprises->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Entreprise supprimée avec succès'
+        ]);
     }
 
      public function getProfil()
@@ -160,6 +207,87 @@ class EntreprisesController extends Controller
                 'logo_url' => $url
             ],
             'message' => 'Logo mis à jour avec succès'
+        ]);
+    }
+
+    public function getregions()
+    {
+        $regions = Entreprises::distinct()->pluck('region');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $regions
+        ]);
+    }
+    
+    public function getCategories()
+    {
+        $categories = Entreprises::distinct()->pluck('categorie');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ]);
+    }
+    public function getCertifications()
+    {
+        $certifications = Entreprises::distinct()->pluck('certification');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $certifications
+        ]);
+    }
+    public function getStatistiques()
+    {
+        $user = Auth::user();
+        $entreprise = $user->entreprise;
+
+        if (!$entreprise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entreprise non trouvée'
+            ], 404);
+        }
+
+        // Exemple de statistiques, à adapter selon vos besoins
+        $statistiques = [
+            'nombre_produits' => $entreprise->produits()->count(),
+            'nombre_commandes' => $entreprise->commandes()->count(),
+            'chiffre_affaires' => $entreprise->commandes()->sum('montant'),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $statistiques
+        ]);
+    }
+    public function getCommandes()
+    {
+        $user = Auth::user();
+        $entreprise = $user->entreprise;
+
+        if (!$entreprise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entreprise non trouvée'
+            ], 404);
+        }
+
+        $commandes = $entreprise->commandes()->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data' => $commandes
+        ]);
+    }
+    public function getVilles()
+    {
+        $villes = Entreprises::distinct()->pluck('ville');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $villes
         ]);
     }
     

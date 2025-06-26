@@ -32,7 +32,7 @@ class CertificationController extends Controller
         $request->validate([
             'produit_id' => 'required|exists:produits,id',
             'nom_certification' => 'required|string|max:255',
-            'description' => 'nullable|string|max:255',
+            // 'description' => 'nullable|string|max:255',
             // 'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -62,7 +62,15 @@ class CertificationController extends Controller
      */
     public function update(Request $request, Certification $certification)
     {
-        //
+        $request->validate([
+            'nom_certification' => 'required|string|max:255',
+            // 'description' => 'nullable|string|max:255',
+            // 'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $certification->update($request->all());
+
+        return response()->json($certification);
     }
 
     /**
@@ -70,6 +78,7 @@ class CertificationController extends Controller
      */
     public function destroy(Certification $certification)
     {
-        //
+        $certification->delete();
+        return response()->json(null, 204);
     }
 }

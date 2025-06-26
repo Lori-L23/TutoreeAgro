@@ -22,12 +22,17 @@ class Contact extends Model
         'read_at' => 'datetime',
     ];
 
+
     // Scopes pour filtrer les messages
     public function scopeNew($query)
     {
         return $query->where('status', 'new');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
