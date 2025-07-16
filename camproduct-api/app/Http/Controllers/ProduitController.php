@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Produit;
+use App\Models\Categories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +24,7 @@ class ProduitController extends Controller
         }
 
         $produits = Produit::where('entreprise_id', $entreprise->id)
-            ->with(['categorie', 'avis'])
+            ->with(['categorie_id', 'avis'])
             ->get();
 
         return response()->json([
@@ -51,9 +52,12 @@ class ProduitController extends Controller
             'prix_promo' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'stock_alerte' => 'required|integer|min:0',
-            'categorie' => 'required|string',
+            'categorie_id' => 'required|exists:categories,id',
             'image_principale' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
+            'statut' => 'in:actif,inactif,brouillon',
+            'poids' => 'nullable|string',
+            'origine' => 'nullable|string',
+            'certifications' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -93,7 +97,6 @@ class ProduitController extends Controller
             'stock' => $request->stock,
             'stock_alerte' => $request->stock_alerte,
             'categorie' => $request->categorie,
-            'sous_categorie' => $request->sous_categorie,
             'statut' => $request->statut ?? 'actif',
             'image_principale' => $imagePrincipalePath,
             'images' => !empty($imagesPaths) ? $imagesPaths : null,
@@ -144,15 +147,19 @@ class ProduitController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
+            
             'nom' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'prix' => 'sometimes|numeric|min:0',
             'prix_promo' => 'nullable|numeric|min:0',
             'stock' => 'sometimes|integer|min:0',
             'stock_alerte' => 'sometimes|integer|min:0',
-            'categorie' => 'sometimes|string',
-            'image_principale' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'categorie_id' => 'sometimes|exists:categories,id',
+            'image_principale' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
+            'statut' => 'in:actif,inactif,brouillon',
+            'poids' => 'nullable|string',
+            'origine' => 'nullable|string',
+            'certifications' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -294,4 +301,16 @@ class ProduitController extends Controller
             'message' => 'Visibilité du produit mise à jour avec succès'
         ]);
     }
+
+public function getcategories()
+{
+    $categories = Categories::select('id', 'nom')
+        ->orderBy('nom', 'asc')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $categories
+    ]);
+}
 }

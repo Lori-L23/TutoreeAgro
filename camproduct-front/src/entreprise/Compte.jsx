@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useAuth } from "../Contexts/Authcontexts"; // Ajustez le chemin selon votre structure
 import Dashboardentre from "../entreprise/dashboard";
 import Produits from "../entreprise/Produits";
+
 import {
   FaBuilding,
   FaEdit,
@@ -38,6 +39,8 @@ const CompteEntreprise = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [secteursActivite, setSecteursActivite] = useState([]);
+  const [loadingSecteurs, setLoadingSecteurs] = useState(false);
 
   // États pour les données
   const [profileData, setProfileData] = useState({
@@ -77,7 +80,7 @@ const CompteEntreprise = () => {
           // On s'assure que les champs du user sont à jour
           phone: user?.phone || response.data.data.phone,
           email: user?.email || response.data.data.email,
-          created_at: user?.created_at || response.data.data.created_at
+          created_at: user?.created_at || response.data.data.created_at,
         });
       } else {
         setError("Erreur lors du chargement du profil");
@@ -87,6 +90,21 @@ const CompteEntreprise = () => {
       setError("Impossible de charger les données du profil");
     } finally {
       setLoading(false);
+    }
+  };
+  // Récupération des secteurs d'activité
+  const fetchSecteursActivite = async () => {
+    try {
+      setLoadingSecteurs(true);
+      const response = await Api.get("/api/entreprise/secteurs-activite");
+
+      if (response.data.success) {
+        setSecteursActivite(response.data.data);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des secteurs:", error);
+    } finally {
+      setLoadingSecteurs(false);
     }
   };
 
@@ -124,12 +142,9 @@ const CompteEntreprise = () => {
     try {
       setSaving(true);
       setError(null);
-      
-      const response = await Api.put(
-        "/api/entreprise/profil",
-        profileData
-      );
-      
+
+      const response = await Api.put("/api/entreprise/profil", profileData);
+
       if (response.data.success) {
         setIsEditing(false);
         await refetchUser(); // Mettre à jour les données utilisateur
@@ -139,7 +154,10 @@ const CompteEntreprise = () => {
       }
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
-      setError(error.response?.data?.message || "Impossible de sauvegarder les modifications");
+      setError(
+        error.response?.data?.message ||
+          "Impossible de sauvegarder les modifications"
+      );
     } finally {
       setSaving(false);
     }
@@ -154,15 +172,11 @@ const CompteEntreprise = () => {
     formData.append("logo", file);
 
     try {
-      const response = await Api.post(
-        "/api/entreprise/upload-logo",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await Api.post("/api/entreprise/upload-logo", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data.success) {
         setProfileData((prev) => ({
@@ -173,17 +187,18 @@ const CompteEntreprise = () => {
       }
     } catch (error) {
       console.error("Erreur lors de l'upload du logo:", error);
-      setError(error.response?.data?.message || "Erreur lors de l'upload du logo");
+      setError(
+        error.response?.data?.message || "Erreur lors de l'upload du logo"
+      );
     }
   };
 
   // Mise à jour du statut d'une commande
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const response = await Api.put(
-        `/api/commandes/${orderId}/statut`,
-        { statut: newStatus }
-      );
+      const response = await Api.put(`/api/commandes/${orderId}/statut`, {
+        statut: newStatus,
+      });
 
       if (response.data.success) {
         setRecentOrders((prev) =>
@@ -194,13 +209,18 @@ const CompteEntreprise = () => {
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour du statut:", error);
-      alert(error.response?.data?.message || "Erreur lors de la mise à jour du statut");
+      alert(
+        error.response?.data?.message ||
+          "Erreur lors de la mise à jour du statut"
+      );
     }
   };
 
   // Supprimer une commande
   const deleteOrder = async (orderId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette commande ?")) {
+    if (
+      !window.confirm("Êtes-vous sûr de vouloir supprimer cette commande ?")
+    ) {
       return;
     }
 
@@ -212,7 +232,10 @@ const CompteEntreprise = () => {
       }
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
-      alert(error.response?.data?.message || "Erreur lors de la suppression de la commande");
+      alert(
+        error.response?.data?.message ||
+          "Erreur lors de la suppression de la commande"
+      );
     }
   };
 
@@ -223,7 +246,7 @@ const CompteEntreprise = () => {
         ...profile,
         phone: user?.phone || profile.phone,
         email: user?.email || profile.email,
-        created_at: user?.created_at || profile.created_at
+        created_at: user?.created_at || profile.created_at,
       });
       setLoading(false);
     } else {
@@ -231,6 +254,7 @@ const CompteEntreprise = () => {
     }
     fetchStats();
     fetchRecentOrders();
+    fetchSecteursActivite();
   }, [user, profile]);
 
   const getStatusColor = (statut) => {
@@ -406,16 +430,23 @@ const CompteEntreprise = () => {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          disabled={loadingSecteurs}
                         >
                           <option value="">Sélectionner un secteur</option>
-                          <option value="Commerce">Commerce</option>
-                          <option value="Services">Services</option>
-                          <option value="Agriculture">Agriculture</option>
-                          <option value="Industrie">Industrie</option>
-                          <option value="Autres">Autres</option>
+                          {loadingSecteurs ? (
+                            <option>Chargement...</option>
+                          ) : (
+                            secteursActivite.map((secteur, index) => (
+                              <option key={index} value={secteur}>
+                                {secteur}
+                              </option>
+                            ))
+                          )}
                         </select>
                       ) : (
-                        <p className="text-gray-900">{profileData.activity_sector}</p>
+                        <p className="text-gray-900">
+                          {profileData.activity_sector}
+                        </p>
                       )}
                     </div>
 
@@ -461,9 +492,7 @@ const CompteEntreprise = () => {
                           placeholder="RC/XXX/XXXX/X/XXXXXX"
                         />
                       ) : (
-                        <p className="text-gray-900">
-                          {profileData.siret}
-                        </p>
+                        <p className="text-gray-900">{profileData.siret}</p>
                       )}
                     </div>
                   </div>
@@ -577,11 +606,14 @@ const CompteEntreprise = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <FaCalendarAlt className="inline mr-1" /> Date de création
+                        <FaCalendarAlt className="inline mr-1" /> Date de
+                        création
                       </label>
                       <p className="text-gray-900">
                         {profileData.created_at
-                          ? new Date(profileData.created_at).toLocaleDateString("fr-FR")
+                          ? new Date(profileData.created_at).toLocaleDateString(
+                              "fr-FR"
+                            )
                           : "Non renseignée"}
                       </p>
                     </div>
@@ -595,7 +627,7 @@ const CompteEntreprise = () => {
                           {user?.email_verified_at ? "Vérifié" : "Non vérifié"}
                         </p>
                         {!user?.email_verified_at && (
-                          <button 
+                          <button
                             className="ml-2 text-sm text-blue-600 hover:underline"
                             onClick={() => {
                               // Fonction pour renvoyer l'email de vérification

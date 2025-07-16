@@ -10,15 +10,24 @@ class Produit extends Model
     protected $fillable = [
         'entreprise_id',
         'nom',
-        'categorie',
+        'categorie_id', // Utilisez l'ID de la catégorie
         'description',
         'prix',
-        // 'ingredients',
-        'region',
-        'image',
-        'actif',
-        'disponible_en_gors',
-        'quantite_stock',
+        'prix_promo',
+        'stock',
+        'stock_alerte',
+        'statut',
+        'ventes',
+        'vues',
+        'favoris',
+        'notation',
+        'nombre_avis',
+        'visible',
+        'en_promotion',
+        'poids',
+        'origine',
+        'certifications',
+        'image_principale', // Champ pour l'image principale
 
     ];
 

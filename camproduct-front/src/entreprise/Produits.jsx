@@ -40,8 +40,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
     prix_promo: "",
     stock: "",
     stock_alerte: "",
-    categorie: "",
-    sous_categorie: "",
+    categories: "",
     statut: "actif",
     visible: true,
     en_promotion: false,
@@ -53,17 +52,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
   const [errors, setErrors] = useState({});
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
-
-  const categories = [
-    "Fruits",
-    "Légumes",
-    "Huiles",
-    "Épices & Condiments",
-    "Céréales",
-    "Produits Laitiers",
-    "Viandes & Poissons",
-    "Boissons",
-  ];
+  const [categories, setCategories] = useState([]);
 
   const certificationOptions = [
     "Bio",
@@ -72,6 +61,21 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
     "Artisanal",
     "Naturel",
     "Pur",
+    "Fait main",
+    "Sans conservateur",
+    "Sans sucre ajouté",
+    "Produit local",
+    "Sans OGM",
+    "Label Rouge",
+    "Certification ISO",
+    "Éco-responsable",
+    "Agriculture durable",
+    "Sans gluten",
+    "Vegan",
+    "Halal",
+    "Casher",
+    "Produit du terroir",
+    "Haute qualité nutritionnelle",
   ];
 
   const handleInputChange = (e) => {
@@ -146,10 +150,11 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
 
       // Ajoutez les champs optionnels
       if (formData.prix_promo)
-        formDataToSend.append("prix_promo", formData.prix_promo);
-      if (formData.sous_categorie)
-        formDataToSend.append("sous_categorie", formData.sous_categorie);
-      if (formData.poids) formDataToSend.append("poids", formData.poids);
+        if (formData.poids)
+          //   formDataToSend.append("prix_promo", formData.prix_promo);
+          // if (formData.sous_categorie)
+          //   formDataToSend.append("sous_categorie", formData.sous_categorie);
+          formDataToSend.append("poids", formData.poids);
       if (formData.origine) formDataToSend.append("origine", formData.origine);
 
       // Champs avec valeurs par défaut
@@ -181,7 +186,7 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
         stock: "",
         stock_alerte: "",
         categorie: "",
-        sous_categorie: "",
+        // sous_categorie: "",
         statut: "actif",
         visible: true,
         en_promotion: false,
@@ -409,29 +414,14 @@ const CreateProductModal = ({ isOpen, onClose, onSubmit }) => {
               >
                 <option value="">Sélectionner une catégorie</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat.id} value={cat.nom}>
+                    {cat.nom}
                   </option>
                 ))}
               </select>
               {errors.categorie && (
                 <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>
               )}
-            </div>
-
-            {/* Sous-catégorie */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sous-catégorie
-              </label>
-              <input
-                type="text"
-                name="sous_categorie"
-                value={formData.sous_categorie}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ex: Fruits tropicaux"
-              />
             </div>
 
             {/* Poids */}
@@ -583,17 +573,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
     }
   }, [product]);
 
-  const categories = [
-    "Fruits",
-    "Légumes",
-    "Huiles",
-    "Épices & Condiments",
-    "Céréales",
-    "Produits Laitiers",
-    "Viandes & Poissons",
-    "Boissons",
-  ];
-
   const certificationOptions = [
     "Bio",
     "Commerce équitable",
@@ -601,6 +580,21 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
     "Artisanal",
     "Naturel",
     "Pur",
+    "Fait main",
+    "Sans conservateur",
+    "Sans sucre ajouté",
+    "Produit local",
+    "Sans OGM",
+    "Label Rouge",
+    "Certification ISO",
+    "Éco-responsable",
+    "Agriculture durable",
+    "Sans gluten",
+    "Vegan",
+    "Halal",
+    "Casher",
+    "Produit du terroir",
+    "Haute qualité nutritionnelle",
   ];
 
   const handleInputChange = (e) => {
@@ -904,29 +898,14 @@ const EditProductModal = ({ isOpen, onClose, product, onSubmit }) => {
               >
                 <option value="">Sélectionner une catégorie</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat.id} value={cat.nom}>
+                    {cat.nom}
                   </option>
                 ))}
               </select>
               {errors.categorie && (
                 <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>
               )}
-            </div>
-
-            {/* Sous-catégorie */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sous-catégorie
-              </label>
-              <input
-                type="text"
-                name="sous_categorie"
-                value={formData.sous_categorie}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ex: Fruits tropicaux"
-              />
             </div>
 
             {/* Poids */}
@@ -1074,21 +1053,27 @@ const Produits = () => {
 
   // Chargement des produits
   useEffect(() => {
-    const fetchProduits = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Api.get("/api/produits");
-        setProduits(response.data.data);
-        setFilteredProduits(response.data.data);
+        // Chargement en parallèle des produits et des catégories
+        const [produitsResponse, categoriesResponse] = await Promise.all([
+          Api.get("/api/produits"),
+          Api.get("/api/produits/categories"), // Ajoutez cette route dans votre API
+        ]);
+
+        setProduits(produitsResponse.data.data);
+        setFilteredProduits(produitsResponse.data.data);
+        setCategories(categoriesResponse.data.data); // Stocke les catégories
       } catch (error) {
-        console.error("Erreur lors du chargement des produits:", error);
+        console.error("Erreur lors du chargement des données:", error);
       } finally {
         setLoading(false);
       }
     };
 
     if (isAuthenticated) {
-      fetchProduits();
+      fetchData();
     }
   }, [isAuthenticated]);
 
@@ -1194,6 +1179,21 @@ const Produits = () => {
 
   const handleCreateProduit = async (produitData) => {
     try {
+      const formData = new FormData();
+
+      // Ajoute tous les champs au FormData
+      Object.keys(produitData).forEach((key) => {
+        if (key === "image_principale") {
+          // Ajoute le fichier image
+          formData.append("image", produitData[key]);
+        } else if (key === "certifications") {
+          // Convertit les certifications en JSON
+          formData.append(key, JSON.stringify(produitData[key]));
+        } else {
+          formData.append(key, produitData[key]);
+        }
+      });
+
       // Envoie les données du nouveau produit à l'API
       const response = await Api.post("/api/produits", produitData, {
         headers: {
@@ -1203,6 +1203,7 @@ const Produits = () => {
       // Ajoute le nouveau produit à la liste
       const newProduit = response.data.data;
       setProduits((prev) => [newProduit, ...prev]);
+      
       alert("Produit créé avec succès !");
     } catch (error) {
       console.error("Erreur lors de la création:", error);
@@ -1360,7 +1361,7 @@ const Produits = () => {
     setShowEditModal(true);
   };
 
-  const categoriesList = [...new Set(produits.map((p) => p.categorie))];
+  // const categoriesList = [...new Set(produits.map((p) => p.categorie))];
   const statutsList = [...new Set(produits.map((p) => p.statut))];
 
   if (!isAuthenticated) {
@@ -1434,9 +1435,9 @@ const Produits = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">Toutes les catégories</option>
-                {categoriesList.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.nom}>
+                    {cat.nom}
                   </option>
                 ))}
               </select>
@@ -1764,6 +1765,7 @@ const Produits = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateProduit}
+          categories={categories}
         />
       )}
 

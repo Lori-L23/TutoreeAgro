@@ -25,9 +25,7 @@ import { AuthProvider } from "./Contexts/Authcontexts";
 
 function App() {
   return (
-    <>
       <AuthProvider>
-        <BrowserRouter>
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Accueil />} />
@@ -52,9 +50,7 @@ function App() {
             <Route path="/validate-email/:token" element={<EmailValidation />} />
 
           </Routes>
-        </BrowserRouter>
       </AuthProvider>
-    </>
   );
 }
 

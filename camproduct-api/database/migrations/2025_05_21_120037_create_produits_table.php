@@ -20,10 +20,8 @@ return new class extends Migration
             $table->decimal('prix_promo', 10, 2)->nullable();
             $table->integer('stock')->default(10);
             $table->integer('stock_alerte')->default(5);
-            $table->string('categorie');
-            $table->string('sous_categorie')->nullable();
+            $table->foreignId('categorie_id')->constrained('categories')->onDelete('cascade');
             $table->enum('statut', ['actif', 'inactif', 'brouillon'])->default('actif');
-            $table->json('images')->nullable();
             $table->integer('ventes')->default(0);
             $table->integer('vues')->default(0);
             $table->integer('favoris')->default(0);
@@ -35,7 +33,6 @@ return new class extends Migration
             $table->string('origine')->nullable();
             $table->json('certifications')->nullable();
             $table->string('image_principale')->nullable(); // Ajoutez ce champ
-            // $table->json('images')->nullable(); // Conservez ce champ pour d'autres images
             $table->timestamps();
         });
     }

@@ -58,6 +58,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/categories', [EntreprisesController::class, 'getCategories']);
         Route::get('/certifications', [EntreprisesController::class, 'getCertifications']);
         Route::get('/villes', [EntreprisesController::class, 'getVilles']);
+        Route::get('/secteurs-activite', [EntreprisesController::class, 'getsecteursActivite']);
     });
     //Dashboard
     Route::get('/dashboard', [DashboardController::class, 'dashboard']);
@@ -69,6 +70,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Produits
     Route::prefix('produits')->group(function () {
         Route::get('/', [ProduitController::class, 'index']);
+        Route::get('/categories', [ProduitController::class, 'getcategories']);
         Route::post('/', [ProduitController::class, 'store']);
         Route::get('/{id}', [ProduitController::class, 'show']);
         Route::put('/{id}', [ProduitController::class, 'update']);

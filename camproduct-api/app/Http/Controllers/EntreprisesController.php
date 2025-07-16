@@ -290,5 +290,14 @@ class EntreprisesController extends Controller
             'data' => $villes
         ]);
     }
+    public function getsecteursActivite()
+    {
+        $activity_sector = Entreprises::distinct()->pluck('activity_sector');
+        
+        return response()->json([
+            'success' => true,
+            'data' => $activity_sector
+        ]);
+    }
     
 }
