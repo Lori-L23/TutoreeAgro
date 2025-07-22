@@ -1,27 +1,50 @@
-import React from 'react';
-import { FaCheckCircle, FaExclamationTriangle, FaUserPlus } from 'react-icons/fa';
+// components/admin/RecentActivities.jsx
+import { FaUser, FaStore, FaShoppingCart, FaFileAlt } from 'react-icons/fa';
 
-const activities = [
-  { id: 1, icon: <FaUserPlus />, text: "Nouvel utilisateur inscrit", date: "Il y a 2 heures" },
-  { id: 2, icon: <FaCheckCircle />, text: "Entreprise validée", date: "Hier" },
-  { id: 3, icon: <FaExclamationTriangle />, text: "Avis signalé", date: "Il y a 3 jours" },
-];
+const RecentActivities = ({ activities, loading }) => {
+  const getActivityIcon = (type) => {
+    switch(type) {
+      case 'user':
+        return <FaUser className="text-blue-500" />;
+      case 'company':
+        return <FaStore className="text-green-500" />;
+      case 'order':
+        return <FaShoppingCart className="text-purple-500" />;
+      default:
+        return <FaFileAlt className="text-gray-500" />;
+    }
+  };
 
-const RecentActivities = () => {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <ul className="divide-y divide-gray-200">
-      {activities.map((activity) => (
-        <li key={activity.id} className="py-4 flex items-start space-x-4">
-          <div className="text-green-600 text-lg">
-            {activity.icon}
+    <div className="space-y-4">
+      {activities.length > 0 ? (
+        activities.map((activity) => (
+          <div key={activity.id} className="flex items-start pb-4 border-b border-gray-100 last:border-0">
+            <div className="p-2 rounded-full bg-gray-50 mr-3">
+              {getActivityIcon(activity.type)}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">
+                {activity.user?.name || 'Système'} • {activity.description}
+              </p>
+              <p className="text-xs text-gray-500">
+                {new Date(activity.created_at).toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-700">{activity.text}</p>
-            <p className="text-xs text-gray-400">{activity.date}</p>
-          </div>
-        </li>
-      ))}
-    </ul>
+        ))
+      ) : (
+        <p className="text-center text-gray-500 py-4">Aucune activité récente</p>
+      )}
+    </div>
   );
 };
 
