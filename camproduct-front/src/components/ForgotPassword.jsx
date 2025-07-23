@@ -7,68 +7,71 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       setError("Veuillez saisir votre adresse email");
       return;
     }
-    
+
     setLoading(true);
     setError("");
-    
+
     try {
       // Simuler l'appel API pour réinitialiser le mot de passe
+      // Exemple avec API réelle:
+      const response = await fetch("/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(true);
+      } else {
+        setError(data.message || "Une erreur est survenue");
+      }
+
       // Remplacer par votre logique d'API réelle
       setTimeout(() => {
         setSuccess(true);
         setLoading(false);
       }, 1500);
-      
-      // Exemple avec API réelle:
-      // const response = await fetch('/api/reset-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // });
-      // const data = await response.json();
-      // if (data.success) {
-      //   setSuccess(true);
-      // } else {
-      //   setError(data.message || "Une erreur est survenue");
-      // }
     } catch (err) {
       console.error("Reset password error:", err);
-      setError("Une erreur est survenue lors de la demande de réinitialisation");
+      setError(
+        "Une erreur est survenue lors de la demande de réinitialisation"
+      );
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-600 to-green-500 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden">
         <div className="bg-green-600 p-6 text-center">
-          <h1 className="text-2xl font-bold text-white">
-            Mot de passe oublié
-          </h1>
+          <h1 className="text-2xl font-bold text-white">Mot de passe oublié</h1>
           <p className="text-white/90 mt-2">
             Réinitialisez votre mot de passe CamProduct
           </p>
         </div>
-        
+
         <div className="p-8">
           {success ? (
             <div className="text-center">
               <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
                 <FiMail className="text-3xl text-green-600" />
               </div>
-              <h2 className="mt-4 text-xl font-semibold text-gray-800">Email envoyé</h2>
+              <h2 className="mt-4 text-xl font-semibold text-gray-800">
+                Email envoyé
+              </h2>
               <p className="mt-2 text-gray-600">
-                Si un compte existe avec l'adresse {email}, vous recevrez un email 
-                contenant les instructions pour réinitialiser votre mot de passe.
+                Si un compte existe avec l'adresse {email}, vous recevrez un
+                email contenant les instructions pour réinitialiser votre mot de
+                passe.
               </p>
               <div className="mt-6">
                 <Link
@@ -84,17 +87,17 @@ const ForgotPassword = () => {
             <>
               <div className="mb-6">
                 <p className="text-gray-600">
-                  Saisissez l'adresse email associée à votre compte et nous vous 
+                  Saisissez l'adresse email associée à votre compte et nous vous
                   enverrons un lien pour réinitialiser votre mot de passe.
                 </p>
               </div>
-              
+
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
                   <p className="text-sm">{error}</p>
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
@@ -114,7 +117,7 @@ const ForgotPassword = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <button
                     type="submit"
@@ -127,14 +130,12 @@ const ForgotPassword = () => {
                         Envoi en cours...
                       </>
                     ) : (
-                      <>
-                        Envoyer les instructions
-                      </>
+                      <>Envoyer les instructions</>
                     )}
                   </button>
                 </div>
               </form>
-              
+
               <div className="mt-6 text-center">
                 <Link
                   to="/login"

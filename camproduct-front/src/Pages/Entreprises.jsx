@@ -4,8 +4,6 @@ import {
   Search,
   Filter,
   MapPin,
-  Phone,
-  Mail,
   BarChart2,
   List,
   Grid,
@@ -15,73 +13,9 @@ import {
   AlertCircle,
   Loader,
 } from "lucide-react";
+import EnterpriseCard from "../components/EntrepriseCard";
 
-// import entreprisesection from '../components/EntrepriseCard'
-
-// Images par défaut depuis Unsplash
-const DEFAULT_IMAGES = {
-  fruits:
-    "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop",
-  epices:
-    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop",
-  cacao:
-    "https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&h=300&fit=crop",
-  cereales:
-    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop",
-  miel: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400&h=300&fit=crop",
-  sauces:
-    "https://images.unsplash.com/photo-1596909190503-90dc2c4aaa92?w=400&h=300&fit=crop",
-  default:
-    "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
-};
-
-// Composant pour gérer les images avec fallback
-const ImageWithFallback = ({
-  src,
-  alt,
-  className,
-  fallbackKey = "default",
-}) => {
-  const [imgSrc, setImgSrc] = useState(src);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-
-  const handleError = () => {
-    setHasError(true);
-    setImgSrc(DEFAULT_IMAGES[fallbackKey] || DEFAULT_IMAGES.default);
-    setIsLoading(false);
-  };
-
-  const handleLoad = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
-
-  return (
-    <div className={`relative ${className}`}>
-      {isLoading && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-          <Loader className="h-6 w-6 text-gray-400 animate-spin" />
-        </div>
-      )}
-      <img
-        src={imgSrc || "/placeholder.svg"}
-        alt={alt}
-        className={`${className} ${
-          isLoading ? "opacity-0" : "opacity-100"
-        } transition-opacity duration-300`}
-        onError={handleError}
-        onLoad={handleLoad}
-      />
-      {hasError && (
-        <div className="absolute bottom-1 right-1">
-          <AlertCircle className="h-4 w-4 text-yellow-500" />
-        </div>
-      )}
-    </div>
-  );
-};
-
+// EnterpriseService class
 class EnterpriseService {
   static async fetchEnterprises(filters = {}) {
     try {
@@ -89,322 +23,87 @@ class EnterpriseService {
 
       if (filters.search) queryParams.append("search", filters.search);
       if (filters.region) queryParams.append("region", filters.region);
-      if (filters.activitySector) queryParams.append("activity_sector", filters.activitySector);
-      if (filters.status) queryParams.append("status", filters.status);
+      if (filters.category)
+        queryParams.append("activity_sector", filters.category);
+      if (filters.certification)
+        queryParams.append("certification", filters.certification);
       if (filters.sort) queryParams.append("sort", filters.sort);
       if (filters.page) queryParams.append("page", filters.page);
 
-      const response = await Api.get(`/api/entreprise?${queryParams}`);
+      const response = await Api.get(`/api/entreprises?${queryParams}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const data = response.data || response; // Selon la structure de votre réponse
+
+      if (!data || (!Array.isArray(data) && !data.data)) {
+        throw new Error("Invalid response format from API");
       }
 
-      return await response.json();
+      console.log("API Response (fetchEnterprises):", data);
+
+      return Array.isArray(data) ? { data, last_page: 1 } : data;
     } catch (error) {
       console.error("Erreur lors de la récupération des entreprises:", error);
       throw error;
     }
   }
 
+  static async fetchCategories() {
+    try {
+      const response = await Api.get(`/api/categories`);
+      const data = response.data || response;
+      console.log("API Response (fetchCategories):", data);
+      return Array.isArray(data) ? data : data.data || [];
+    } catch (error) {
+      console.error("Erreur catégories:", error);
+      return [];
+    }
+  }
+
   static async fetchRegions() {
     try {
-      const response = await Api.get(`/api/entreprise/regions`);
-      if (response.data) {
-        // Extraire les régions uniques depuis les entreprises
-        return [...new Set(response.data.map(e => e.region))].map(region => ({
-          name: region,
-          count: response.data.filter(e => e.region === region).length
-        }));
-      }
-      throw new Error("Erreur de format de réponse");
+      const response = await Api.get(`/api/regions`);
+      const data = response.data || response;
+      console.log("API Response (fetchRegions):", data);
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
       console.error("Erreur régions:", error);
       return [];
     }
   }
 
-  static async fetchVilles() {
-    try {
-      const response = await Api.get(`/api/entreprise/villes`);
-      if (response.data) {
-        // Extraire les villes uniques depuis les entreprises
-        return [...new Set(response.data.map(e => e.ville))].map(ville => ({
-          name: ville,
-          count: response.data.filter(e => e.ville === ville).length
-        }));
-      }
-      throw new Error("Erreur de format de réponse");
-    } catch (error) {
-      console.error("Erreur villes:", error);
-      return [];
-    }
-  }
-
   static async fetchActivitySectors() {
     try {
-      const response = await Api.get(`/api/entreprises/activity-sectors`);
-      if (response.data) {
-        // Extraire les secteurs d'activité uniques
-        return [...new Set(response.data.map(e => e.activity_sector))].map(sector => ({
-          name: sector,
-          count: response.data.filter(e => e.activity_sector === sector).length
-        }));
-      }
-      throw new Error("Erreur de format de réponse");
+      const response = await Api.get(`/api/activity-sectors`);
+      const data = response.data || response;
+      console.log("API Response (fetchActivitySectors):", data);
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
       console.error("Erreur secteurs d'activité:", error);
       return [];
     }
   }
 
-  // Formatte les données d'entreprise pour correspondre à l'interface attendue
   static formatEnterpriseData(enterprise) {
     return {
       id: enterprise.id,
-      name: enterprise.nom_entreprise,
-      logo: enterprise.logo,
-      cover: enterprise.logo, // Vous pourriez ajouter un champ cover séparé dans la table
+      name: enterprise.nom_entreprise || enterprise.name || "Nom inconnu",
+      logo: enterprise.logo ? `/storage/${enterprise.logo}` : null,
+      cover: enterprise.logo ? `/storage/${enterprise.logo}` : null,
       description: enterprise.description || "Aucune description disponible",
-      products: 0, // À remplacer par le nombre réel de produits si disponible
-      region: enterprise.region,
-      ville: enterprise.ville,
-      category: enterprise.activity_sector || "Non spécifié",
-      certifications: [], // À remplir avec les certifications si disponibles
+      products: enterprise.produits_count || enterprise.products || 0,
+      region: enterprise.region || "Région inconnue",
+      ville: enterprise.ville || "Ville inconnue",
+      category:
+        enterprise.activity_sector || enterprise.category || "Non spécifié",
+      certifications: enterprise.certifications || [],
       contact: {
-        email: "", // À remplir avec le contact si disponible
-        phone: ""  // À remplir avec le contact si disponible
+        email: enterprise.user?.email || enterprise.contact?.email || "",
+        phone: enterprise.user?.phone || enterprise.contact?.phone || "",
       },
-      status: enterprise.status
+      status: enterprise.status || "unknown",
     };
   }
-  static async fetchCategories() {
-    try {
-      const response = await Api.get(`/api/entreprise/categories`);
-      if (response.data) {
-        return [...new Set(response.data.map(e => e.category))].map(category => ({
-          name: category,
-          count: response.data.filter(e => e.category === category).length
-        }));
-      }
-      throw new Error("Erreur de format de réponse");
-    } catch (error) {
-      console.error("Erreur catégories:", error);
-      return this.getDefaultCategories();
-    }
-  }
-
-  static async fetchCertifications() {
-    try {
-      const response = await Api.get(`/api/entreprise/certifications`);
-      if (response.data) {
-        return response.data.map(cert => ({
-          name: cert,
-          count: response.data.filter(c => c === cert).length
-        }));
-      }
-      throw new Error("Erreur de format de réponse");
-    } catch (error) {
-      console.error("Erreur certifications:", error);
-      return this.getDefaultCertifications();
-    }
-  }
-
-  // Méthodes de fallback (données par défaut)
-  static getDefaultRegions() {
-    return [
-      { name: "Adamaoua", count: 12 },
-      { name: "Centre", count: 45 },
-      { name: "Est", count: 18 },
-      { name: "Extrême-Nord", count: 22 },
-      { name: "Littoral", count: 38 },
-      { name: "Nord", count: 25 },
-      { name: "Nord-Ouest", count: 30 },
-      { name: "Ouest", count: 28 },
-      { name: "Sud", count: 15 },
-      { name: "Sud-Ouest", count: 20 }
-    ];
-  }
-
-  static getDefaultCategories() {
-    return [
-      { name: "Boissons", count: 35 },
-      { name: "Épices", count: 28 },
-      { name: "Cacao", count: 42 },
-      { name: "Céréales", count: 39 },
-      { name: "Miel", count: 25 },
-      { name: "Sauces", count: 18 }
-    ];
-  }
-
-  static getDefaultCertifications() {
-    return [
-      { name: "Bio", count: 15 },
-      { name: "Fairtrade", count: 8 },
-      { name: "ISO 22000", count: 5 },
-      { name: "HACCP", count: 12 }
-    ];
-  }
-
-  static getDefaultEnterprises() {
-    return [
-      {
-        id: 1,
-        name: "Entreprise Agricole du Centre",
-        logo: "",
-        cover: "",
-        description: "Producteur de cacao biologique",
-        products: 12,
-        region: "Centre",
-        ville: "Yaoundé",
-        category: "Cacao",
-        certifications: ["Bio", "Fairtrade"],
-        contact: {
-          email: "contact@eac.com",
-          phone: "+237 6 94 85 74 12"
-        },
-        status: "active"
-      },
-    ];
-
 }
-}
-
-// Composant réutilisable pour les cartes d'entreprise
-const EnterpriseCard = ({ enterprise, viewMode }) => {
-  const getImageFallbackKey = (category) => {
-    const categoryMap = {
-      Boissons: "fruits",
-      Épices: "epices",
-      Cacao: "cacao",
-      Céréales: "cereales",
-      Miel: "miel",
-      Sauces: "sauces",
-    };
-
-    for (const [key, fallback] of Object.entries(categoryMap)) {
-      if (category.includes(key)) return fallback;
-    }
-    return "default";
-  };
-
-  if (viewMode === "grid") {
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
-        <div className="h-32 bg-gray-100 relative overflow-hidden">
-          <ImageWithFallback
-            src={enterprise.cover || "/placeholder.svg"}
-            alt={`${enterprise.name} banner`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            fallbackKey={getImageFallbackKey(enterprise.category)}
-          />
-          <div className="absolute -bottom-10 left-4">
-            <ImageWithFallback
-              src={enterprise.logo || "/placeholder.svg"}
-              alt={enterprise.name}
-              className="w-20 h-20 rounded-xl object-cover border-4 border-white shadow-md"
-              fallbackKey={getImageFallbackKey(enterprise.category)}
-            />
-          </div>
-        </div>
-
-        <div className="p-4 pt-12">
-          <h3 className="font-bold text-lg mb-1">{enterprise.name}</h3>
-          <p className="text-sm text-gray-500 mb-2">{enterprise.category}</p>
-
-          <div className="flex items-center mb-3">
-            <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-            <span className="text-sm text-gray-600">
-              {enterprise.ville}, {enterprise.region}
-            </span>
-          </div>
-
-          <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-            {enterprise.description}
-          </p>
-
-          <div className="flex flex-wrap gap-1 mb-4">
-            {enterprise.certifications.map((cert, idx) => (
-              <span
-                key={idx}
-                className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full hover:bg-green-200 transition-colors"
-              >
-                {cert}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">
-              {enterprise.products} produits
-            </span>
-            <a
-              href={`#enterprise-${enterprise.id}`}
-              className="text-green-700 hover:text-green-800 text-sm font-medium flex items-center group-hover:translate-x-1 transition-transform"
-            >
-              Voir le profil <ChevronRight className="h-4 w-4 ml-1" />
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all p-6 flex flex-col md:flex-row group">
-      <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-        <ImageWithFallback
-          src={enterprise.logo || "/placeholder.svg"}
-          alt={enterprise.name}
-          className="w-24 h-24 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
-          fallbackKey={getImageFallbackKey(enterprise.category)}
-        />
-      </div>
-
-      <div className="flex-1">
-        <div className="flex flex-col md:flex-row md:justify-between">
-          <div>
-            <h3 className="font-bold text-lg">{enterprise.name}</h3>
-            <p className="text-sm text-gray-500 mb-2">{enterprise.category}</p>
-          </div>
-          <div className="flex items-center">
-            <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-            <span className="text-sm text-gray-600">
-              {enterprise.ville}, {enterprise.region}
-            </span>
-          </div>
-        </div>
-
-        <p className="text-sm text-gray-600 my-3 line-clamp-2">
-          {enterprise.description}
-        </p>
-
-        <div className="flex flex-wrap gap-1 mb-4">
-          {enterprise.certifications.map((cert, idx) => (
-            <span
-              key={idx}
-              className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full hover:bg-green-200 transition-colors"
-            >
-              {cert}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col justify-between items-start md:items-end">
-        <span className="text-sm font-medium mb-2 md:mb-0">
-          {enterprise.products} produits
-        </span>
-        <a
-          href={`#enterprise-${enterprise.id}`}
-          className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center group-hover:translate-x-1 transition-all"
-        >
-          Voir le profil <ChevronRight className="h-4 w-4 ml-1" />
-        </a>
-      </div>
-    </div>
-  );
-};
 
 // Composant principal
 export default function Entreprises() {
@@ -429,31 +128,22 @@ export default function Entreprises() {
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        const [regionsData, categoriesData, certificationsData] =
+        const [regionsData, categoriesData, activitySectorsData] =
           await Promise.all([
             EnterpriseService.fetchRegions(),
             EnterpriseService.fetchCategories(),
-            EnterpriseService.fetchCertifications(),
-            EnterpriseService.fetchVilles(), // Charger les villes si nécessaire
+            EnterpriseService.fetchActivitySectors(),
           ]);
 
         setRegions(regionsData);
         setCategories(categoriesData);
-        setCertifications(certificationsData);
+        setCertifications(activitySectorsData);
 
-        // Charger les entreprises
         await loadEnterprises();
       } catch (err) {
         console.error("Erreur lors du chargement initial:", err);
-        setError(
-          "Erreur de connexion à l'API. Utilisation des données par défaut."
-        );
-
-        // Fallback aux données par défaut
-        setRegions(EnterpriseService.getDefaultRegions());
-        setCategories(EnterpriseService.getDefaultCategories());
-        setCertifications(EnterpriseService.getDefaultCertifications());
-        setEnterprises(EnterpriseService.getDefaultEnterprises());
+        setError("Erreur de connexion à l'API. Veuillez réessayer plus tard.");
+        setEnterprises([]);
       } finally {
         setLoading(false);
       }
@@ -480,18 +170,26 @@ export default function Entreprises() {
         page: currentPage,
         ...filters,
       });
-
-      if (response.data) {
-        setEnterprises(response.data);
-        setTotalPages(response.last_page || 1);
-      } else {
-        setEnterprises(response);
+      // Gestion des différentes structures de réponse
+      let enterprisesData = [];
+      if (Array.isArray(response)) {
+        enterprisesData = response;
+      } else if (response.data && Array.isArray(response.data)) {
+        enterprisesData = response.data;
+      } else if (Array.isArray(response.enterprises)) {
+        enterprisesData = response.enterprises;
       }
+
+      const formattedEnterprises = enterprisesData.map(
+        EnterpriseService.formatEnterpriseData
+      );
+
+      setEnterprises(formattedEnterprises);
+      setTotalPages(response.last_page || 1);
     } catch (err) {
       console.error("Erreur lors du chargement des entreprises:", err);
-      if (enterprises.length === 0) {
-        setEnterprises(EnterpriseService.getDefaultEnterprises());
-      }
+      setError("Impossible de charger les entreprises. Veuillez réessayer.");
+      setEnterprises([]);
     }
   };
 
@@ -504,23 +202,31 @@ export default function Entreprises() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [searchTerm, activeFilters, sortBy, currentPage]);
+  }, [searchTerm, activeFilters, sortBy, currentPage, loading]);
 
   // Fonction de filtrage côté client (fallback)
   const filteredEnterprises = useMemo(() => {
     let filtered = enterprises;
 
+    // Fonction pour normaliser les chaînes (enlever accents et mettre en minuscule)
+    const normalizeString = (str) => {
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    };
+
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
+      const searchLower = normalizeString(searchTerm);
       filtered = filtered.filter(
         (enterprise) =>
-          enterprise.name.toLowerCase().includes(searchLower) ||
-          enterprise.description.toLowerCase().includes(searchLower) ||
-          enterprise.category.toLowerCase().includes(searchLower) ||
-          enterprise.ville.toLowerCase().includes(searchLower) ||
-          enterprise.region.toLowerCase().includes(searchLower) ||
+          normalizeString(enterprise.name).includes(searchLower) ||
+          normalizeString(enterprise.description).includes(searchLower) ||
+          normalizeString(enterprise.category).includes(searchLower) ||
+          normalizeString(enterprise.ville).includes(searchLower) ||
+          normalizeString(enterprise.region).includes(searchLower) ||
           enterprise.certifications.some((cert) =>
-            cert.toLowerCase().includes(searchLower)
+            normalizeString(cert).includes(searchLower)
           )
       );
     }
@@ -532,7 +238,19 @@ export default function Entreprises() {
             return enterprise.region === filter.replace("region-", "");
           }
           if (filter.startsWith("cat-")) {
-            return enterprise.category.includes(filter.replace("cat-", ""));
+            const categoryName = filter.replace("cat-", "");
+            const normalizedCategory = normalizeString(categoryName);
+            const normalizedEnterpriseCategory = normalizeString(
+              enterprise.category
+            );
+
+            const categoryKeywords = normalizedCategory.split(/[\s,;/]+/);
+
+            // Vérifie si le secteur d'activité contient le nom de la catégorie
+            return categoryKeywords.some(
+              (keyword) =>
+                keyword && normalizedEnterpriseCategory.includes(keyword)
+            );
           }
           if (filter.startsWith("cert-")) {
             return enterprise.certifications.includes(
@@ -588,22 +306,6 @@ export default function Entreprises() {
     setCurrentPage(1);
   };
 
-  const getImageFallbackKey = (category) => {
-    const categoryMap = {
-      Boissons: "fruits",
-      Épices: "epices",
-      Cacao: "cacao",
-      Céréales: "cereales",
-      Miel: "miel",
-      Sauces: "sauces",
-    };
-
-    for (const [key, fallback] of Object.entries(categoryMap)) {
-      if (category.includes(key)) return fallback;
-    }
-    return "default";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -630,7 +332,7 @@ export default function Entreprises() {
       )}
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-green-700 to-green-600 text-white py-12 md:py-16 ">
+      <div className="bg-gradient-to-r from-green-700 to-green-600 text-white py-12 md:py-16">
         <div className="container mx-auto px-4 mt-16">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             Annuaire des Entreprises Agroalimentaires
@@ -713,7 +415,9 @@ export default function Entreprises() {
                       className="text-sm flex justify-between w-full cursor-pointer"
                     >
                       <span>{region.name}</span>
-                      <span className="text-gray-500">({region.count})</span>
+                      <span className="text-gray-500">
+                        ({region.count || 0})
+                      </span>
                     </label>
                   </div>
                 ))}
@@ -733,15 +437,17 @@ export default function Entreprises() {
                       type="checkbox"
                       id={`cat-${index}`}
                       className="mr-2 rounded text-green-600 focus:ring-green-500"
-                      onChange={() => toggleFilter(`cat-${category.name}`)}
-                      checked={activeFilters.includes(`cat-${category.name}`)}
+                      onChange={() => toggleFilter(`cat-${category.nom}`)}
+                      checked={activeFilters.includes(`cat-${category.nom}`)}
                     />
                     <label
                       htmlFor={`cat-${index}`}
                       className="text-sm flex justify-between w-full cursor-pointer"
                     >
-                      <span>{category.name}</span>
-                      <span className="text-gray-500">({category.count})</span>
+                      <span>{category.nom}</span>
+                      <span className="text-gray-500">
+                        ({category.count || 0})
+                      </span>
                     </label>
                   </div>
                 ))}
@@ -766,7 +472,7 @@ export default function Entreprises() {
                       className="text-sm flex justify-between w-full cursor-pointer"
                     >
                       <span>{cert.name}</span>
-                      <span className="text-gray-500">({cert.count})</span>
+                      <span className="text-gray-500">({cert.count || 0})</span>
                     </label>
                   </div>
                 ))}
@@ -848,7 +554,7 @@ export default function Entreprises() {
                     key={enterprise.id}
                     enterprise={enterprise}
                     viewMode={viewMode}
-                  /> || <entreprisesection />
+                  />
                 ))}
               </div>
             ) : (
@@ -861,7 +567,7 @@ export default function Entreprises() {
                   Essayez d'ajuster vos filtres ou votre recherche pour trouver
                   ce que vous cherchez.
                 </p>
-                {activeFilters.length > 0 && (
+                {activeFilters.length > 0 || searchTerm ? (
                   <button
                     onClick={() => {
                       setActiveFilters([]);
@@ -871,7 +577,7 @@ export default function Entreprises() {
                   >
                     Réinitialiser tous les filtres
                   </button>
-                )}
+                ) : null}
               </div>
             )}
 
@@ -886,7 +592,7 @@ export default function Entreprises() {
                   className={`flex items-center px-4 py-2 border border-gray-300 rounded-md ${
                     currentPage === 1
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <ChevronLeft className="h-5 w-5 mr-1" />
@@ -945,7 +651,7 @@ export default function Entreprises() {
                   className={`flex items-center px-4 py-2 border border-gray-300 rounded-md ${
                     currentPage === totalPages
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   Suivant
@@ -973,9 +679,8 @@ export default function Entreprises() {
                   </button>
                 </div>
 
-                {/* Contenu des filtres mobiles - même structure que desktop */}
+                {/* Contenu des filtres mobiles */}
                 <div className="space-y-6">
-                  {/* Filtres par région */}
                   <div>
                     <div className="flex items-center mb-3">
                       <MapPin className="h-4 w-4 mr-2 text-green-700" />
@@ -1001,7 +706,7 @@ export default function Entreprises() {
                           >
                             <span>{region.name}</span>
                             <span className="text-gray-500">
-                              ({region.count})
+                              ({region.count || 0})
                             </span>
                           </label>
                         </div>
@@ -1009,7 +714,6 @@ export default function Entreprises() {
                     </div>
                   </div>
 
-                  {/* Filtres par catégorie */}
                   <div>
                     <div className="flex items-center mb-3">
                       <Filter className="h-4 w-4 mr-2 text-green-700" />
@@ -1035,7 +739,7 @@ export default function Entreprises() {
                           >
                             <span>{category.name}</span>
                             <span className="text-gray-500">
-                              ({category.count})
+                              ({category.count || 0})
                             </span>
                           </label>
                         </div>
@@ -1043,7 +747,6 @@ export default function Entreprises() {
                     </div>
                   </div>
 
-                  {/* Filtres par certification */}
                   <div>
                     <h3 className="font-medium text-gray-800 mb-3">
                       Certifications
@@ -1066,7 +769,7 @@ export default function Entreprises() {
                           >
                             <span>{cert.name}</span>
                             <span className="text-gray-500">
-                              ({cert.count})
+                              ({cert.count || 0})
                             </span>
                           </label>
                         </div>
@@ -1088,166 +791,6 @@ export default function Entreprises() {
           </div>
         </div>
       )}
-
-      {/* Détail d'une entreprise - Modal */}
-      {typeof window !== "undefined" &&
-        window.location.hash.startsWith("#enterprise-") && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 transition-opacity">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-              <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl">
-                <button
-                  onClick={() => (window.location.hash = " ")}
-                  className="absolute top-4 right-4 rounded-md bg-white text-gray-400 hover:text-gray-500 z-10"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-
-                {(() => {
-                  const enterpriseId = Number.parseInt(
-                    window.location.hash.replace("#enterprise-", "")
-                  );
-                  const enterprise = enterprises.find(
-                    (e) => e.id === enterpriseId
-                  );
-
-                  if (!enterprise)
-                    return (
-                      <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                        <div className="text-center">
-                          <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-                          <h3 className="mt-3 text-lg font-medium text-gray-900">
-                            Entreprise non trouvée
-                          </h3>
-                        </div>
-                      </div>
-                    );
-
-                  return (
-                    <>
-                      <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                        <div className="sm:flex sm:items-start">
-                          <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                            {/* En-tête */}
-                            <div className="relative h-48 bg-gray-100 rounded-t-lg overflow-hidden mb-6">
-                              <ImageWithFallback
-                                src={enterprise.cover || "/placeholder.svg"}
-                                alt={`Bannière ${enterprise.name}`}
-                                className="w-full h-full object-cover"
-                                fallbackKey={getImageFallbackKey(
-                                  enterprise.category
-                                )}
-                              />
-                              <div className="absolute -bottom-12 left-6">
-                                <ImageWithFallback
-                                  src={enterprise.logo || "/placeholder.svg"}
-                                  alt={`Logo ${enterprise.name}`}
-                                  className="w-24 h-24 rounded-xl object-cover border-4 border-white shadow-lg"
-                                  fallbackKey={getImageFallbackKey(
-                                    enterprise.category
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="mt-16 pl-2">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="text-2xl font-bold text-gray-900">
-                                    {enterprise.name}
-                                  </h3>
-                                  <p className="text-gray-500">
-                                    {enterprise.category}
-                                  </p>
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {enterprise.certifications.map(
-                                    (cert, idx) => (
-                                      <span
-                                        key={idx}
-                                        className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                                      >
-                                        {cert}
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-4 flex items-center text-gray-600">
-                                <MapPin className="h-5 w-5 mr-1" />
-                                <span>
-                                  {enterprise.ville}, {enterprise.region}
-                                </span>
-                              </div>
-
-                              <div className="mt-6">
-                                <h4 className="font-medium text-gray-900 mb-2">
-                                  Description
-                                </h4>
-                                <p className="text-gray-600">
-                                  {enterprise.description}
-                                </p>
-                              </div>
-
-                              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium text-gray-900 mb-2">
-                                    Produits
-                                  </h4>
-                                  <p className="text-gray-600">
-                                    {enterprise.products} produits référencés
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <h4 className="font-medium text-gray-900 mb-2">
-                                    Contact
-                                  </h4>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center text-gray-600">
-                                      <Mail className="h-4 w-4 mr-2" />
-                                      <a
-                                        href={`mailto:${enterprise.contact.email}`}
-                                        className="hover:text-green-700"
-                                      >
-                                        {enterprise.contact.email}
-                                      </a>
-                                    </div>
-                                    <div className="flex items-center text-gray-600">
-                                      <Phone className="h-4 w-4 mr-2" />
-                                      <a
-                                        href={`tel:${enterprise.contact.phone.replace(
-                                          /\s/g,
-                                          ""
-                                        )}`}
-                                        className="hover:text-green-700"
-                                      >
-                                        {enterprise.contact.phone}
-                                      </a>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        <button
-                          type="button"
-                          onClick={() => (window.location.hash = "")}
-                          className="mt-3 inline-flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-white shadow-sm hover:bg-green-700 sm:mt-0 sm:ml-3 sm:w-auto"
-                        >
-                          Fermer
-                        </button>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ import Dashboardentre from "./entreprise/dashboard";
 import AdminAccount from "./admin/Compte";
 import AdminUsers from "./admin/AdminUsers";
 import EmailValidation from "./components/EmailValidation";
+import CompanyDetails from "./entreprise/Details";
 
 import { AuthProvider } from "./Contexts/Authcontexts";
 
@@ -42,6 +43,8 @@ function App() {
               <Route path="/dashboardadmin" element={<AdminDashboard />} />
               <Route path="/admincompte" element={<AdminAccount />} />
               <Route path="/adminusers" element={<AdminUsers />} />
+              <Route path="/entreprises/:id" element={<CompanyDetails />} />
+
 
             </Route>  
             <Route path="/login" element={<Login />} />

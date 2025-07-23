@@ -10,193 +10,12 @@ import {
   X,
 } from "lucide-react";
 import back from "../assets/2.avif";
-import ananas from "../assets/ananas.jpg";
-import piment from "../assets/piment.avif";
-import miel from "../assets/miel1.avif";
-import cacao from "../assets/cacao2.avif";
-import fruits from "../assets/3.avif";
-import epices from "../assets/epices.png";
-import api from "../assets/api.png";
-
-
-// Simulation d'une base de données avec vos images originales
-const DATABASE = {
-  products: [
-    {
-      id: 1,
-      name: "Jus d'Ananas Bio",
-      price: "2500 FCFA",
-      rating: 4.8,
-      image: ananas,
-      company: "Fruits du Pays",
-      companyId: 1,
-      region: "Littoral",
-      category: "Boissons",
-      featured: true,
-      keywords: ["jus", "ananas", "bio", "fruits", "boisson", "naturel"],
-    },
-    {
-      id: 2,
-      name: "Poudre de Piment Rouge",
-      price: "1200 FCFA",
-      rating: 4.5,
-      image: piment,
-      company: "Épices du Cameroun",
-      companyId: 2,
-      region: "Ouest",
-      category: "Épices",
-      keywords: ["piment", "épices", "rouge", "condiment", "cuisine"],
-    },
-    {
-      id: 3,
-      name: "Miel de Fleurs Sauvages",
-      price: "3300 FCFA",
-      rating: 5.0,
-      image: miel,
-      company: "Apiculture Durable",
-      companyId: 3,
-      region: "Adamaoua",
-      category: "Miel",
-      featured: true,
-      keywords: ["miel", "fleurs", "sauvage", "naturel", "sucrant"],
-    },
-    {
-      id: 4,
-      name: "Cacao en Poudre Premium",
-      price: "1800 FCFA",
-      rating: 4.7,
-      image: cacao,
-      company: "Cacao Excellence",
-      companyId: 4,
-      region: "Centre",
-      category: "Cacao & Café",
-      keywords: ["cacao", "poudre", "chocolat", "premium", "café"],
-    },
-    {
-      id: 5,
-      name: "Café Arabica des Montagnes",
-      price: "4200 FCFA",
-      rating: 4.9,
-      image: cacao,
-      company: "Café des Hauts Plateaux",
-      companyId: 5,
-      region: "Ouest",
-      category: "Cacao & Café",
-      keywords: ["café", "arabica", "montagne", "grain", "torréfié"],
-    },
-    {
-      id: 6,
-      name: "Huile de Palme Rouge Bio",
-      price: "2800 FCFA",
-      rating: 4.6,
-      image: fruits,
-      company: "Palmeraie Durable",
-      companyId: 6,
-      region: "Littoral",
-      category: "Huiles",
-      keywords: ["huile", "palme", "rouge", "bio", "cuisine"],
-    },
-    {
-      id: 7,
-      name: "Plantain Chips Épicés",
-      price: "800 FCFA",
-      rating: 4.3,
-      image: ananas,
-      company: "Snacks Tropicaux",
-      companyId: 7,
-      region: "Centre",
-      category: "Fruits",
-      keywords: ["plantain", "chips", "épicé", "snack", "croustillant"],
-    },
-    {
-      id: 8,
-      name: "Gingembre en Poudre",
-      price: "1500 FCFA",
-      rating: 4.4,
-      image: piment,
-      company: "Épices du Cameroun",
-      companyId: 2,
-      region: "Ouest",
-      category: "Épices",
-      keywords: ["gingembre", "poudre", "épices", "santé", "digestif"],
-    },
-  ],
-  companies: [
-    {
-      id: 1,
-      name: "Fruits du Pays",
-      logo: fruits,
-      products: 12,
-      region: "Littoral",
-      new: true,
-      keywords: ["fruits", "jus", "bio", "naturel"],
-    },
-    {
-      id: 2,
-      name: "Épices du Cameroun",
-      logo: epices,
-      products: 8,
-      region: "Ouest",
-      keywords: ["épices", "condiments", "piment", "gingembre"],
-    },
-    {
-      id: 3,
-      name: "Apiculture Durable",
-      logo: api,
-      products: 5,
-      region: "Adamaoua",
-      new: true,
-      keywords: ["miel", "apiculture", "abeilles", "naturel"],
-    },
-    {
-      id: 4,
-      name: "Cacao Excellence",
-      logo: cacao,
-      products: 6,
-      region: "Centre",
-      keywords: ["cacao", "chocolat", "premium"],
-    },
-    {
-      id: 5,
-      name: "Café des Hauts Plateaux",
-      logo: cacao,
-      products: 4,
-      region: "Ouest",
-      new: true,
-      keywords: ["café", "arabica", "montagne", "torréfaction"],
-    },
-    {
-      id: 6,
-      name: "Palmeraie Durable",
-      logo: fruits,
-      products: 3,
-      region: "Littoral",
-      keywords: ["huile", "palme", "bio", "durable"],
-    },
-    {
-      id: 7,
-      name: "Snacks Tropicaux",
-      logo: ananas,
-      products: 7,
-      region: "Centre",
-      keywords: ["snacks", "plantain", "chips", "tropical"],
-    },
-  ],
-  categories: [
-    { name: "Boissons", icon: "🥤", count: 45 },
-    { name: "Épices", icon: "🌶️", count: 32 },
-    { name: "Céréales", icon: "🌾", count: 28 },
-    { name: "Miel", icon: "🍯", count: 15 },
-    { name: "Fruits", icon: "🍍", count: 37 },
-    { name: "Cacao & Café", icon: "☕", count: 22 },
-    { name: "Huiles", icon: "🫒", count: 18 },
-  ],
-};
+import Api from "../Services/Api";
 
 // Hook personnalisé pour la recherche
 const useSearch = (data, searchTerm, searchFields) => {
   return useMemo(() => {
-    if (!searchTerm.trim()) return data;
+    if (!Array.isArray(data) || !searchTerm.trim()) return data || [];
 
     const term = searchTerm.toLowerCase();
     return data.filter((item) => {
@@ -251,31 +70,44 @@ const ProductCard = ({ product, onClick }) => (
 
 // Composant réutilisable pour les cartes d'entreprise
 const CompanyCard = ({ company, onClick }) => (
+  <Link to={`/entreprises/${company.id}`}>
+
   <div
     onClick={() => onClick && onClick(company)}
     className="bg-white rounded-xl shadow p-6 flex items-center hover:shadow-md transition-all cursor-pointer transform hover:scale-102"
   >
     <div className="relative">
-      <img
-        src={company.logo}
-        alt={company.name}
-        className="w-16 h-16 object-cover rounded-full border-2 border-green-100"
-      />
-      {company.new && (
-        <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold px-1 rounded-full">
-          Nouveau
-        </div>
-      )}
+      {/* Avatar par défaut si pas de logo */}
+      <div className="w-16 h-16 bg-green-100 rounded-full border-2 border-green-200 flex items-center justify-center">
+        {company.logo ? (
+          <img
+            src={company.logo}
+            alt={company.nom_entreprise}
+            className="w-full h-full object-cover rounded-full"
+          />
+        ) : (
+          <span className="text-green-700 font-bold text-xl">
+            {company.nom_entreprise?.charAt(0)?.toUpperCase() || "E"}
+          </span>
+        )}
+      </div>
+      {/* Badge "Nouveau" pour les 3 dernières entreprises */}
+      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold px-1 rounded-full">
+        Nouveau
+      </div>
     </div>
     <div className="ml-4">
-      <h3 className="font-medium text-lg">{company.name}</h3>
-      <p className="text-sm text-gray-600">{company.products} produits</p>
+      <h3 className="font-medium text-lg">{company.nom_entreprise}</h3>
+      <p className="text-sm text-gray-600">
+        {company.nb_produits || 0} produit{(company.nb_produits || 0) > 1 ? 's' : ''}
+      </p>
       <div className="flex items-center text-gray-500 mt-1">
         <MapPin className="h-4 w-4 mr-1" />
-        <span className="text-xs">{company.region}</span>
+        <span className="text-xs">{company.ville || company.region || "Cameroun"}</span>
       </div>
     </div>
   </div>
+  </Link>
 );
 
 // Composant pour les résultats de recherche
@@ -386,26 +218,141 @@ export default function Accueil() {
   const [showResults, setShowResults] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [regions, setRegions] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState({
+    categories: true,
+    regions: true,
+    products: true,
+    companies: true,
+  });
+  const [error, setError] = useState({
+    categories: null,
+    regions: null,
+    products: null,
+    companies: null,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Récupération des catégories
+      try {
+        const categoriesResponse = await Api.get("/api/categories");
+        setCategories(Array.isArray(categoriesResponse.data) ? categoriesResponse.data : []);
+        setLoading((prev) => ({ ...prev, categories: false }));
+      } catch (err) {
+        setError((prev) => ({ ...prev, categories: err }));
+        setLoading((prev) => ({ ...prev, categories: false }));
+        setCategories([]);
+        console.error("Erreur catégories:", err);
+      }
+
+      // Récupération des régions
+      try {
+        const regionsResponse = await Api.get("/api/regions");
+        console.log("Régions reçues:", regionsResponse.data);
+        
+        // Gestion de la structure de réponse {success: true, data: [...]}
+        let regionsData = [];
+        if (regionsResponse.data && regionsResponse.data.data && Array.isArray(regionsResponse.data.data)) {
+          // Si la réponse a la structure {success: true, data: [...]}
+          regionsData = regionsResponse.data.data.map((region, index) => ({
+            id: index + 1,
+            nom: region
+          }));
+        } else if (Array.isArray(regionsResponse.data)) {
+          // Si la réponse est directement un tableau
+          regionsData = regionsResponse.data.map((region, index) => ({
+            id: index + 1,
+            nom: typeof region === 'string' ? region : region.nom
+          }));
+        }
+        
+        setRegions(regionsData);
+        setLoading((prev) => ({ ...prev, regions: false }));
+      } catch (err) {
+        console.error("Détails de l'erreur régions:", err.response);
+        setError((prev) => ({ ...prev, regions: err }));
+        setLoading((prev) => ({ ...prev, regions: false }));
+        setRegions([]);
+      }
+
+      // Récupération des produits
+      try {
+        const productsResponse = await Api.get("/api/public/produits");
+        setProducts(Array.isArray(productsResponse.data) ? productsResponse.data : []);
+        setLoading((prev) => ({ ...prev, products: false }));
+      } catch (err) {
+        setError((prev) => ({ ...prev, products: err }));
+        setLoading((prev) => ({ ...prev, products: false }));
+        setProducts([]);
+        console.error("Erreur produits:", err);
+      }
+
+      // Récupération des entreprises
+      try {
+        const companiesResponse = await Api.get("/api/entreprises");
+        console.log("Entreprises reçues:", companiesResponse.data);
+        
+        // Gestion de la structure de réponse avec success
+        let companiesData = [];
+        if (companiesResponse.data && companiesResponse.data.data && Array.isArray(companiesResponse.data.data)) {
+          companiesData = companiesResponse.data.data;
+        } else if (Array.isArray(companiesResponse.data)) {
+          companiesData = companiesResponse.data;
+        }
+        
+        setCompanies(companiesData);
+        setLoading((prev) => ({ ...prev, companies: false }));
+      } catch (err) {
+        setError((prev) => ({ ...prev, companies: err }));
+        setLoading((prev) => ({ ...prev, companies: false }));
+        setCompanies([]);
+        console.error("Erreur entreprises:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Données filtrées
   const filteredProducts = useMemo(() => {
-    let products = DATABASE.products;
+    if (loading.products || !Array.isArray(products)) return [];
+
+    let filtered = [...products];
 
     if (selectedCategory) {
-      products = products.filter((p) => p.category === selectedCategory);
+      filtered = filtered.filter((p) => p.category === selectedCategory);
     }
 
     if (selectedRegion) {
-      products = products.filter((p) => p.region === selectedRegion);
+      filtered = filtered.filter((p) => p.region === selectedRegion);
     }
 
-    return products;
-  }, [selectedCategory, selectedRegion]);
+    return filtered;
+  }, [products, selectedCategory, selectedRegion, loading.products]);
 
-  const featuredProducts = filteredProducts
-    .filter((p) => p.featured)
-    .slice(0, 4);
-  const popularProducts = filteredProducts.slice(0, 4);
+  const featuredProducts = useMemo(
+    () => Array.isArray(filteredProducts) ? filteredProducts.filter((p) => p.featured).slice(0, 4) : [],
+    [filteredProducts]
+  );
+
+  const popularProducts = useMemo(
+    () => Array.isArray(filteredProducts) ? filteredProducts.slice(0, 4) : [],
+    [filteredProducts]
+  );
+
+  const newCompanies = useMemo(() => {
+    if (!Array.isArray(companies) || companies.length === 0) return [];
+    
+    // Trier les entreprises par ID décroissant pour avoir les plus récentes
+    // puis prendre les 3 premières
+    return companies
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 3);
+  }, [companies]);
 
   // Gestion de la recherche
   const handleSearch = (e) => {
@@ -423,8 +370,6 @@ export default function Accueil() {
       setShowResults(false);
     }
   };
-
-  const regions = [...new Set(DATABASE.products.map((p) => p.region))];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -481,11 +426,12 @@ export default function Accueil() {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              disabled={loading.categories}
             >
               <option value="">Toutes les catégories</option>
-              {DATABASE.categories.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name}
+              {Array.isArray(categories) && categories.map((cat) => (
+                <option key={cat.id} value={cat.nom}>
+                  {cat.nom}
                 </option>
               ))}
             </select>
@@ -494,11 +440,12 @@ export default function Accueil() {
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              disabled={loading.regions}
             >
               <option value="">Toutes les régions</option>
-              {regions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
+              {Array.isArray(regions) && regions.map((region) => (
+                <option key={region.id} value={region.nom}>
+                  {region.nom}
                 </option>
               ))}
             </select>
@@ -524,29 +471,48 @@ export default function Accueil() {
         <h2 className="text-2xl md:text-3xl font-bold mb-6">
           Explorez par catégorie
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-4">
-          {DATABASE.categories.map((category, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedCategory(category.name)}
-              className={`bg-white rounded-xl shadow hover:shadow-md transition-all p-4 flex flex-col items-center justify-center ${
-                selectedCategory === category.name
-                  ? "bg-green-50 border-2 border-green-500"
-                  : "hover:bg-green-50"
-              }`}
-            >
-              <span className="text-3xl mb-2">{category.icon}</span>
-              <h3 className="font-medium text-center text-sm">
-                {category.name}
-              </h3>
-              <p className="text-gray-500 text-xs">{category.count} produits</p>
-            </button>
-          ))}
-        </div>
+        {loading.categories ? (
+          <div className="text-center py-8">Chargement des catégories...</div>
+        ) : error.categories ? (
+          <div className="text-center text-red-500 py-8">
+            Erreur lors du chargement des catégories
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-4">
+            {Array.isArray(categories) && categories.slice(0, 7).map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.nom)}
+                className={`bg-white rounded-xl shadow hover:shadow-md transition-all p-4 flex flex-col items-center justify-center ${
+                  selectedCategory === category.nom
+                    ? "bg-green-50 border-2 border-green-500"
+                    : "hover:bg-green-50"
+                }`}
+              >
+                <span className="text-3xl mb-2">🛒</span>
+                <h3 className="font-medium text-center text-sm">
+                  {category.nom}
+                </h3>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Produits en vedette */}
-      {featuredProducts.length > 0 && (
+      {loading.products ? (
+        <section className="bg-white py-12">
+          <div className="container mx-auto px-4 text-center py-8">
+            Chargement des produits...
+          </div>
+        </section>
+      ) : error.products ? (
+        <section className="bg-white py-12">
+          <div className="container mx-auto px-4 text-center text-red-500 py-8">
+            Erreur lors du chargement des produits
+          </div>
+        </section>
+      ) : featuredProducts.length > 0 ? (
         <section className="bg-white py-12">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-6">
@@ -567,50 +533,75 @@ export default function Accueil() {
             </div>
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* Produits populaires */}
       <section className="container mx-auto py-12 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold">
-            {selectedCategory || selectedRegion
-              ? "Produits filtrés"
-              : "Produits les plus consultés"}
-          </h2>
-          <Link
-            to="/produits"
-            className="text-green-700 font-medium flex items-center hover:text-green-800"
-          >
-            Voir tous <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {popularProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loading.products ? (
+          <div className="text-center py-8">Chargement des produits...</div>
+        ) : error.products ? (
+          <div className="text-center text-red-500 py-8">
+            Erreur lors du chargement des produits
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold">
+                {selectedCategory || selectedRegion
+                  ? "Produits filtrés"
+                  : "Produits les plus consultés"}
+              </h2>
+              <Link
+                to="/produits"
+                className="text-green-700 font-medium flex items-center hover:text-green-800"
+              >
+                Voir tous <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {popularProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* Nouvelles entreprises */}
       <section className="bg-gray-100 py-12">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold">
-              Nouvelles entreprises inscrites
-            </h2>
-            <Link to="/entreprises">
-            <button className="text-green-700 font-medium flex items-center hover:text-green-800">
-              Voir toutes <ArrowRight className="ml-1 h-4 w-4" />
-            </button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {DATABASE.companies
-              .filter((c) => c.new)
-              .map((company) => (
-                <CompanyCard key={company.id} company={company} />
-              ))}
-          </div>
+          {loading.companies ? (
+            <div className="text-center py-8">
+              Chargement des entreprises...
+            </div>
+          ) : error.companies ? (
+            <div className="text-center text-red-500 py-8">
+              Erreur lors du chargement des entreprises
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  Dernières entreprises inscrites
+                </h2>
+                <Link to="/entreprises">
+                  <button className="text-green-700 font-medium flex items-center hover:text-green-800">
+                    Voir toutes <ArrowRight className="ml-1 h-4 w-4" />
+                  </button>
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {newCompanies.map((company) => (
+                  <CompanyCard key={company.id} company={company} />
+                ))}
+              </div>
+              {newCompanies.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Aucune entreprise inscrite récemment</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -634,8 +625,8 @@ export default function Accueil() {
       {showResults && (
         <SearchResults
           searchTerm={searchTerm}
-          products={DATABASE.products}
-          companies={DATABASE.companies}
+          products={products}
+          companies={companies}
           onClose={() => setShowResults(false)}
         />
       )}

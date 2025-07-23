@@ -35,18 +35,16 @@ class EntreprisesController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function getall()
     {
-        //
+        $entreprises = Entreprises::all();
+
+        return response()->json([
+            'success' => true,
+            'data' => $entreprises
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
 
     /**
      * Display the specified resource.
@@ -59,13 +57,7 @@ class EntreprisesController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Entreprises $entreprises)
-    {
-        //
-    }
+
 
     /**
      * Update the specified resource in storage.
@@ -114,37 +106,37 @@ class EntreprisesController extends Controller
         ]);
     }
 
-     public function getProfil()
+    public function getProfil()
     {
         $user = Auth::user();
         $entreprise = $user->entreprise;
-        
+
         if (!$entreprise) {
             return response()->json([
                 'success' => false,
                 'message' => 'Entreprise non trouvée'
             ], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => $entreprise
         ]);
     }
-    
+
     // Mettre à jour le profil
     public function updateProfil(Request $request)
     {
         $user = Auth::user();
         $entreprise = $user->entreprise;
-        
+
         if (!$entreprise) {
             return response()->json([
                 'success' => false,
                 'message' => 'Entreprise non trouvée'
             ], 404);
         }
-        
+
         $validator = Validator::make($request->all(), [
             'nom_entreprise' => 'required|string|max:255',
             'secteur' => 'required|string|max:255',
@@ -156,51 +148,51 @@ class EntreprisesController extends Controller
             'date_creation' => 'nullable|date',
             'numero_rccm' => 'nullable|string|max:50',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $entreprise->update($validator->validated());
-        
+
         return response()->json([
             'success' => true,
             'data' => $entreprise,
             'message' => 'Profil mis à jour avec succès'
         ]);
     }
-    
+
     // Uploader le logo
     public function uploadLogo(Request $request)
     {
         $request->validate([
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
-        
+
         $user = Auth::user();
         $entreprise = $user->entreprise;
-        
+
         if (!$entreprise) {
             return response()->json([
                 'success' => false,
                 'message' => 'Entreprise non trouvée'
             ], 404);
         }
-        
+
         // Supprimer l'ancien logo s'il existe
         if ($entreprise->logo) {
             Storage::delete('public/logos/' . basename($entreprise->logo));
         }
-        
+
         // Stocker le nouveau logo
         $path = $request->file('logo')->store('public/logos');
         $url = Storage::url($path);
-        
+
         $entreprise->update(['logo' => $url]);
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -213,17 +205,17 @@ class EntreprisesController extends Controller
     public function getregions()
     {
         $regions = Entreprises::distinct()->pluck('region');
-        
+
         return response()->json([
             'success' => true,
             'data' => $regions
         ]);
     }
-    
+
     public function getCategories()
     {
         $categories = Entreprises::distinct()->pluck('categorie');
-        
+
         return response()->json([
             'success' => true,
             'data' => $categories
@@ -232,7 +224,7 @@ class EntreprisesController extends Controller
     public function getCertifications()
     {
         $certifications = Entreprises::distinct()->pluck('certification');
-        
+
         return response()->json([
             'success' => true,
             'data' => $certifications
@@ -284,7 +276,7 @@ class EntreprisesController extends Controller
     public function getVilles()
     {
         $villes = Entreprises::distinct()->pluck('ville');
-        
+
         return response()->json([
             'success' => true,
             'data' => $villes
@@ -293,11 +285,55 @@ class EntreprisesController extends Controller
     public function getsecteursActivite()
     {
         $activity_sector = Entreprises::distinct()->pluck('activity_sector');
-        
+
         return response()->json([
             'success' => true,
             'data' => $activity_sector
         ]);
     }
+
+    public function getRegionsAll()
+    {
+        // $regions = Entreprises::distinct()->pluck('ville');
+        
+        return Entreprises::select('region')
+            ->selectRaw('count(*) as count')
+            ->where('status', 'approuve')
+            ->groupBy('region')
+            ->orderBy('region')
+            ->get()
+            ->map(function ($region) {
+                return [
+                    'name' => $region->region,
+                    'count' => $region->count
+                ];
+            });
+    }
+
+    public function detailsEntreprise($id)
+    {
+        $entreprise = Entreprises::find($id);
+
+        if (!$entreprise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entreprise non trouvée'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $entreprise
+        ]);
+    }
+    public function getSectors()
+    {
+        return Entreprises::select('activity_sector as name')
+            ->selectRaw('count(*) as count')
+            ->where('status', 'approuve')
+            ->groupBy('activity_sector')
+            ->orderBy('activity_sector')
+            ->get();
     
+    }
 }

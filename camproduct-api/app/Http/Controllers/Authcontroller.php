@@ -341,4 +341,20 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Un nouvel e-mail de vérification a été envoyé.']);
     }
+    public function getUserById($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Charger les relations si elles existent
+        $user->load(['client', 'entreprise', 'admin']);
+
+        return response()->json([
+            'user' => $user,
+            'profile_type' => $user->user_type
+        ]);
+    }
 }

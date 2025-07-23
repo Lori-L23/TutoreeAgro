@@ -15,7 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, resendValidationEmail } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -35,7 +35,7 @@ const Login = () => {
       if (stateMessage.includes("vérifier votre email")) {
         setShowResendEmail(true);
         if (stateEmail) {
-          setFormData(prev => ({ ...prev, email: stateEmail }));
+          setFormData((prev) => ({ ...prev, email: stateEmail }));
         }
       }
       toast.info(stateMessage, {
@@ -47,7 +47,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -62,20 +62,21 @@ const Login = () => {
 
     try {
       const result = await login(formData.email, formData.password);
-      
+
+      navigate("/");
       if (result.success) {
         toast.success("Connexion réussie !", {
           position: "top-right",
           autoClose: 2000,
         });
-
-        navigate("/");
       } else {
         setError(result.message);
-        
+
         // Si l'erreur indique que l'email n'est pas validé
-        if (result.message?.toLowerCase().includes("email") && 
-            result.message?.toLowerCase().includes("validé")) {
+        if (
+          result.message?.toLowerCase().includes("email") &&
+          result.message?.toLowerCase().includes("validé")
+        ) {
           setShowResendEmail(true);
         }
       }
@@ -96,12 +97,15 @@ const Login = () => {
     setIsResending(true);
     try {
       const result = await resendValidationEmail(formData.email);
-      
+
       if (result.success) {
-        toast.success("Email de validation renvoyé ! Vérifiez votre boîte mail.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        toast.success(
+          "Email de validation renvoyé ! Vérifiez votre boîte mail.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
+        );
         setShowResendEmail(false);
       } else {
         toast.error(result.message || "Erreur lors du renvoi de l'email");
@@ -122,20 +126,22 @@ const Login = () => {
             <h2 className="text-3xl font-bold text-green-700 mb-2">
               Connexion
             </h2>
-            <p className="text-gray-600">
-              Accédez à votre espace personnel
-            </p>
+            <p className="text-gray-600">Accédez à votre espace personnel</p>
           </div>
 
           {/* Message d'état depuis la navigation */}
           {stateMessage && (
-            <div className={`mb-6 p-4 rounded-lg border ${
-              stateMessage.includes("actif") || stateMessage.includes("succès")
-                ? "bg-green-50 border-green-200 text-green-700"
-                : "bg-blue-50 border-blue-200 text-blue-700"
-            }`}>
+            <div
+              className={`mb-6 p-4 rounded-lg border ${
+                stateMessage.includes("actif") ||
+                stateMessage.includes("succès")
+                  ? "bg-green-50 border-green-200 text-green-700"
+                  : "bg-blue-50 border-blue-200 text-blue-700"
+              }`}
+            >
               <div className="flex items-start">
-                {stateMessage.includes("actif") || stateMessage.includes("succès") ? (
+                {stateMessage.includes("actif") ||
+                stateMessage.includes("succès") ? (
                   <FiCheckCircle className="w-5 h-5 mt-0.5 mr-3 flex-shrink-0" />
                 ) : (
                   <FiAlertCircle className="w-5 h-5 mt-0.5 mr-3 flex-shrink-0" />
@@ -176,9 +182,24 @@ const Login = () => {
               >
                 {isResending ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.329A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.329A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Envoi en cours...
                   </>
@@ -250,7 +271,9 @@ const Login = () => {
                   type="checkbox"
                   className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 />
-                <span className="ml-2 text-sm text-gray-600">Se souvenir de moi</span>
+                <span className="ml-2 text-sm text-gray-600">
+                  Se souvenir de moi
+                </span>
               </label>
               <Link
                 to="/forgot-password"
@@ -269,9 +292,24 @@ const Login = () => {
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Connexion en cours...
                 </>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\ClientsController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\EntreprisesController;
@@ -27,6 +28,16 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/validate-email', [AuthController::class, 'validateEmail']);
 Route::post('/resend-validation-email', [AuthController::class, 'resendEmailValidation']);
+Route::get('/categories', [CategoriesController::class, 'index']);
+Route::get('/regions', [EntreprisesController::class, 'getRegionsAll']);
+Route::get('/entreprises', [EntreprisesController::class, 'getall']);
+Route::get('/activity-sectors', [EntreprisesController::class, 'getSectors']);
+route::get('/public/produits',[ProduitController::class, 'getproduits']);
+Route::get('/entreprises/{id}', [EntreprisesController::class, 'detailsEntreprise']);
+Route::get('/entreprises/{id}/produits', [ProduitController::class, 'getProduitsByEntreprise']);
+Route::get('/users/{id}', [AuthController::class, 'getUserById']);
+
+
 
 // Routes de contact (partie publique)
 Route::prefix('contact')->group(function () {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Produit;
 use App\Models\Categories;
+use App\Models\Entreprises;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -313,4 +314,31 @@ public function getcategories()
         'data' => $categories
     ]);
 }
+
+public function getproduits(){
+     $produits = Produit::all();
+
+        return response()->json([
+            'success' => true,
+            'data' => $produits
+        ]);
+}
+public function getProduitsByEntreprise($id)
+    {
+        $entreprise = Entreprises::find($id);
+
+        if (!$entreprise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entreprise non trouvée'
+            ], 404);
+        }
+
+        $produits = Produit::where('entreprise_id', $entreprise->id)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $produits
+        ]);
+    }
 }

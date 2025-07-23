@@ -81,4 +81,9 @@ class CategoriesController extends Controller
 
         return response()->json(['message' => 'Category deleted successfully'], 204);
     }
+    public function getRegionsAll()
+    {
+        $regions = Categories::distinct()->pluck('region');
+        return response()->json($regions);
+    }
 }
